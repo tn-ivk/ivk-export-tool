@@ -1,0 +1,36 @@
+###############################################################################
+# Set default behavior to automatically normalize line endings.
+###############################################################################
+* text=auto
+
+###############################################################################
+# Set default behavior for command prompt diff.
+###############################################################################
+*.cs     diff=csharp text
+*.csproj text
+*.sln    text merge=union
+
+###############################################################################
+# Set the merge driver for project and solution files
+###############################################################################
+*.sln       merge=union
+*.csproj    merge=union
+
+*.axaml     text
+*.axaml.cs  text
+
+###############################################################################
+# Binary files
+###############################################################################
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.mov       binary
+*.mp4       binary
+*.mp3       binary
+*.zip       binary
+*.pdf       binary
+*.dll       binary
+*.exe       binary

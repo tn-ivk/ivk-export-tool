@@ -1,0 +1,149 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:IvkExportTool.Desktop.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="700"
+        x:Class="IvkExportTool.Desktop.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="IVK Export Tool - MySQL Database Exporter"
+        Width="900" Height="700"
+        MinWidth="800" MinHeight="600">
+
+  <Design.DataContext>
+    <vm:MainWindowViewModel/>
+  </Design.DataContext>
+
+  <Grid Margin="20">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <!-- Заголовок -->
+    <TextBlock Grid.Row="0" Text="MySQL Database Exporter" FontSize="24" FontWeight="Bold" Margin="0,0,0,20"/>
+
+    <!-- Параметры подключения -->
+    <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" Padding="15" Margin="0,0,0,10">
+      <StackPanel>
+        <TextBlock Text="Параметры подключения" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+
+          <!-- Host -->
+          <TextBlock Grid.Row="0" Grid.Column="0" Text="Host:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+          <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Host}" Watermark="localhost" Margin="0,0,20,10"/>
+
+          <!-- Port -->
+          <TextBlock Grid.Row="0" Grid.Column="2" Text="Port:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+          <TextBox Grid.Row="0" Grid.Column="3" Text="{Binding Port}" Watermark="3306" Width="100" HorizontalAlignment="Left" Margin="0,0,0,10"/>
+
+          <!-- Username -->
+          <TextBlock Grid.Row="1" Grid.Column="0" Text="Username:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+          <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Username}" Watermark="root" Margin="0,0,20,10"/>
+
+          <!-- Password -->
+          <TextBlock Grid.Row="1" Grid.Column="2" Text="Password:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+          <TextBox Grid.Row="1" Grid.Column="3" Text="{Binding Password}" PasswordChar="*" Watermark="password" Margin="0,0,0,10"/>
+
+          <!-- Кнопки -->
+          <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Content="Тест подключения" Command="{Binding TestConnectionCommand}" IsEnabled="{Binding !IsLoading}" Margin="0,0,10,0" Padding="10,5"/>
+            <Button Content="Подключиться" Command="{Binding ConnectCommand}" IsEnabled="{Binding !IsLoading}" Padding="10,5"/>
+          </StackPanel>
+        </Grid>
+      </StackPanel>
+    </Border>
+
+    <!-- База данных и таблицы -->
+    <Border Grid.Row="2" BorderBrush="Gray" BorderThickness="1" Padding="15" Margin="0,0,0,10" IsEnabled="{Binding IsConnected}">
+      <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Выбор базы данных -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+          <TextBlock Text="База данных:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+          <ComboBox ItemsSource="{Binding Databases}"
+                    SelectedItem="{Binding SelectedDatabase}"
+                    Width="200"
+                    Margin="0,0,10,0"/>
+          <Button Content="Обновить таблицы" Command="{Binding RefreshTablesCommand}" Padding="10,5"/>
+        </StackPanel>
+
+        <!-- Список таблиц -->
+        <Border Grid.Row="1" BorderBrush="LightGray" BorderThickness="1">
+          <ScrollViewer>
+            <ItemsControl ItemsSource="{Binding Tables}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border BorderBrush="LightGray" BorderThickness="0,0,0,1" Padding="10,5">
+                    <Grid>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                      </Grid.ColumnDefinitions>
+
+                      <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" Margin="0,0,10,0"/>
+                      <TextBlock Grid.Column="1" Text="{Binding Name}" VerticalAlignment="Center" FontWeight="Bold"/>
+                      <TextBlock Grid.Column="2" Text="{Binding RowCount, StringFormat='Rows: {0}'}" VerticalAlignment="Center" Margin="10,0"/>
+                      <TextBlock Grid.Column="3" Text="{Binding Engine}" VerticalAlignment="Center" Foreground="Gray"/>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Border>
+
+        <!-- Кнопки управления таблицами -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+          <Button Content="Выбрать все" Command="{Binding SelectAllTablesCommand}" Margin="0,0,10,0" Padding="10,5"/>
+          <Button Content="Снять выбор" Command="{Binding DeselectAllTablesCommand}" Padding="10,5"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Прогресс экспорта -->
+    <Border Grid.Row="3" BorderBrush="Gray" BorderThickness="1" Padding="15" Margin="0,0,0,10" IsVisible="{Binding IsExporting}">
+      <StackPanel>
+        <TextBlock Text="Экспорт данных..." FontWeight="Bold" Margin="0,0,0,5"/>
+        <ProgressBar Value="{Binding ExportProgress}" Minimum="0" Maximum="100" Height="20"/>
+        <TextBlock Text="{Binding ExportProgress, StringFormat='Прогресс: {0}%'}" HorizontalAlignment="Center" Margin="0,5,0,0"/>
+      </StackPanel>
+    </Border>
+
+    <!-- Статус и кнопка экспорта -->
+    <Grid Grid.Row="4">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+
+      <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+      <Button Grid.Column="1" Content="Экспортировать" Command="{Binding ExportCommand}"
+              IsEnabled="{Binding !IsExporting}" Padding="20,10" FontWeight="Bold"/>
+    </Grid>
+
+  </Grid>
+</Window>
