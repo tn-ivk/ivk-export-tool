@@ -109,10 +109,12 @@
                   Margin="6,0,0,0"/>
         </Grid>
 
-        <!-- Индикатор загрузки -->
-        <ProgressBar IsIndeterminate="True"
-                     IsVisible="{Binding IsLoading}"
-                     Height="4"/>
+        <!-- Индикатор загрузки (зарезервировано фиксированное место) -->
+        <Border Height="4">
+          <ProgressBar IsIndeterminate="True"
+                       IsVisible="{Binding IsLoading}"
+                       Height="4"/>
+        </Border>
 
       </StackPanel>
     </Border>
