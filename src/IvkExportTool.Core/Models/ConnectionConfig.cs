@@ -1,4 +1,4 @@
-﻿namespace IvkExportTool.Core.Models;
+namespace IvkExportTool.Core.Models;
 
 /// <summary>
 /// Конфигурация подключения к MySQL базе данных

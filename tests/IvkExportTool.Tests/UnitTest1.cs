@@ -1,4 +1,4 @@
-﻿namespace IvkExportTool.Tests;
+namespace IvkExportTool.Tests;
 
 public class Tests
 {

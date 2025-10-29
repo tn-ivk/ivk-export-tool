@@ -90,27 +90,6 @@
           </Grid>
         </StackPanel>
 
-        <!-- Статус -->
-        <Border Classes="panel"
-                Padding="16,12">
-          <TextBlock Text="{Binding StatusMessage}"
-                     Classes="body"
-                     TextWrapping="Wrap"
-                     HorizontalAlignment="Center">
-            <TextBlock.Styles>
-              <Style Selector="TextBlock">
-                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
-              </Style>
-              <Style Selector="TextBlock[IsVisible=True]">
-                <Setter Property="Foreground" Value="{StaticResource SuccessBrush}"/>
-              </Style>
-            </TextBlock.Styles>
-            <TextBlock.IsVisible>
-              <Binding Path="IsStatusSuccess"/>
-            </TextBlock.IsVisible>
-          </TextBlock>
-        </Border>
-
         <!-- Кнопки -->
         <Grid ColumnDefinitions="*,*">
           <Button Grid.Column="0"
