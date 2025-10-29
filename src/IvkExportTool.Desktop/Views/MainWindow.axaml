@@ -76,7 +76,7 @@
                 Classes="icon-button-status"
                 Margin="4,0,8,0">
           <PathIcon Data="{StaticResource CloseIcon}"
-                    Width="16" Height="16"/>
+                    Width="14" Height="14"/>
         </Button>
       </Grid>
     </Border>
