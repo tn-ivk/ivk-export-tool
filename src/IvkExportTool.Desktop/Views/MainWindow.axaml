@@ -71,11 +71,11 @@
         </Button>
 
         <Button Grid.Column="4"
-                ToolTip.Tip="Сменить подключение"
+                ToolTip.Tip="Отключиться"
                 Command="{Binding ChangeConnectionCommand}"
                 Classes="icon-button-status"
                 Margin="4,0,8,0">
-          <PathIcon Data="{StaticResource SettingsIcon}"
+          <PathIcon Data="{StaticResource DisconnectIcon}"
                     Width="16" Height="16"/>
         </Button>
       </Grid>

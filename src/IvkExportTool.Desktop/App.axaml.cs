@@ -1,16 +1,16 @@
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core;
 using Avalonia.Data.Core.Plugins;
-using System.Linq;
 using Avalonia.Markup.Xaml;
+using IvkExportTool.Core.Interfaces;
+using IvkExportTool.Core.Models;
 using IvkExportTool.Desktop.ViewModels;
 using IvkExportTool.Desktop.Views;
-using Microsoft.Extensions.DependencyInjection;
-using IvkExportTool.Core.Interfaces;
 using IvkExportTool.Infrastructure.Services;
-using IvkExportTool.Core.Models;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace IvkExportTool.Desktop;
 
