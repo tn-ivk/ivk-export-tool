@@ -395,7 +395,7 @@ XLarge: 32px
 
 ## Примеры использования
 
-### Форма подключения к БД
+### Примеры использования
 ```
 Контейнер:
   - Фон: #ffffff
@@ -425,44 +425,6 @@ Input поля:
   - Secondary: #78909c (Отмена)
 ```
 
-### Список таблиц БД
-```
-Контейнер:
-  - Фон: #fafafa
-  
-Таблица:
-  - Фон: #ffffff
-  - Border: 1px solid #eceff1
-  - Border Radius: 8px
-  
-Заголовки:
-  - Фон: #eceff1
-  - Текст: rgba(38, 50, 56, 0.87)
-  - Font Weight: 500
-  
-Строки:
-  - Alternate: #fafafa / #ffffff
-  - Hover: #f5f5f5
-  - Selected: rgba(84, 110, 122, 0.12)
-```
-
-### Окно выполнения запроса
-```
-SQL Редактор:
-  - Фон: #263238
-  - Текст: #eceff1
-  - Border: #37474f
-  
-Кнопка "Выполнить":
-  - Primary: #546e7a
-  - Icon: play icon
-  
-Результаты:
-  - Фон таблицы: #ffffff
-  - Заголовок: #eceff1
-  - Success message: #e8f5e9 с текстом #4caf50
-  - Error message: #ffebee с текстом #f44336
-```
 
 ---
 
