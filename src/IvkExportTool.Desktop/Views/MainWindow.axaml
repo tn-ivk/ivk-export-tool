@@ -75,7 +75,7 @@
                 Command="{Binding ChangeConnectionCommand}"
                 Classes="icon-button-status"
                 Margin="4,0,8,0">
-          <PathIcon Data="{StaticResource DisconnectIcon}"
+          <PathIcon Data="{StaticResource CloseIcon}"
                     Width="16" Height="16"/>
         </Button>
       </Grid>
