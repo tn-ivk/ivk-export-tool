@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Описание проекта
 
-**IvkExportTool** - кроссплатформенное портабельное приложение с GUI на Avalonia для экспорта таблиц MySQL в различные форматы (CSV, Excel, JSON, SQL).
+**IvkExportTool** - кроссплатформенное портабельное приложение с GUI на Avalonia для экспорта таблиц MySQL в SQL-файлы. В текущей версии реализован экспорт в SQL формат с полной структурой и данными таблиц.
 
 ## Технологический стек
 
@@ -43,6 +43,28 @@ IvkExportTool/
 - `Desktop` → `Core` + `Infrastructure` (использует оба)
 - `Tests` → все проекты
 
+### Dependency Injection
+
+Приложение использует Microsoft.Extensions.DependencyInjection для управления зависимостями. Конфигурация происходит в `App.axaml.cs`:
+
+```csharp
+// Регистрация сервисов
+services.AddSingleton<IDatabaseService, MySqlDatabaseService>();
+services.AddSingleton<IExportService, SqlExportService>();
+
+// Регистрация ViewModels
+services.AddTransient<MainWindowViewModel>();
+```
+
+ViewModels получают зависимости через конструктор. Сервисы регистрируются как Singleton, ViewModels как Transient.
+
+### Конфигурационные файлы
+
+- **`Directory.Build.props`** - общие настройки для всех проектов (LangVersion, Nullable, метаданные)
+- **`global.json`** - версия .NET SDK (9.0.0)
+- **`.editorconfig`** - правила форматирования кода (отступы, стиль C#)
+- **`IvkExportTool.sln`** - файл решения со всеми проектами
+
 ## Команды для разработки
 
 ### Базовые команды
@@ -64,10 +86,7 @@ dotnet run --project src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj
 ### Разработка с hot reload
 
 ```bash
-# Использовать dev.sh скрипт (если создан)
-./scripts/dev.sh
-
-# Или напрямую
+# Запуск с автоматической перезагрузкой при изменении файлов
 dotnet watch run --project src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj
 ```
 
@@ -164,14 +183,14 @@ dotnet publish src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj \
 Проект использует GitHub Actions:
 
 - **build-and-test.yml** - автоматическая сборка и тесты на push/PR (Ubuntu и Windows)
-- **publish.yml** - создание релизов при создании тега версии (Windows x64, Linux x64, macOS x64)
+- **publish.yml** - создание релизов при создании тега версии (Windows x64, Linux x64)
 
 ### Создание релиза
 
 ```bash
 git tag -a v1.0.0 -m "Release version 1.0.0"
 git push origin v1.0.0
-# GitHub Actions автоматически создаст релиз с артефактами для всех платформ
+# GitHub Actions автоматически создаст релиз с артефактами для Windows и Linux
 ```
 
 ## Ключевые зависимости
