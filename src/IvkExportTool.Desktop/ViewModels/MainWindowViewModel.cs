@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 using IvkExportTool.Core.Enums;
 using IvkExportTool.Core.Interfaces;
 using IvkExportTool.Core.Models;
+using System.Threading;
 
 namespace IvkExportTool.Desktop.ViewModels;
 
@@ -14,18 +15,22 @@ public partial class MainWindowViewModel : ViewModelBase
 {
     private readonly IDatabaseService _databaseService;
     private readonly IExportService _exportService;
+    private readonly IAppSettingsService? _appSettingsService;
+    private readonly SemaphoreSlim _saveSemaphore = new(1, 1);
+    private CancellationTokenSource? _saveCts;
+    private bool _isInitializingSettings;
 
     [ObservableProperty]
-    private string _host = "localhost";
+    private string _host = "192.168.233.101";
 
     [ObservableProperty]
     private string _port = "3306";
 
     [ObservableProperty]
-    private string _username = "root";
+    private string _username = "user";
 
     [ObservableProperty]
-    private string _password = "";
+    private string _password = "mJKuyb&9!2@m";
 
     [ObservableProperty]
     private string? _selectedDatabase;
@@ -48,15 +53,18 @@ public partial class MainWindowViewModel : ViewModelBase
     public ObservableCollection<string> Databases { get; } = new();
     public ObservableCollection<TableInfo> Tables { get; } = new();
 
-    public MainWindowViewModel() : this(null!, null!)
+    public MainWindowViewModel() : this(null!, null!, null!)
     {
         // Конструктор для дизайнера
     }
 
-    public MainWindowViewModel(IDatabaseService databaseService, IExportService exportService)
+    public MainWindowViewModel(IDatabaseService databaseService, IExportService exportService, IAppSettingsService appSettingsService)
     {
         _databaseService = databaseService;
         _exportService = exportService;
+        _appSettingsService = appSettingsService;
+
+        _ = LoadSettingsAsync();
     }
 
     private ConnectionConfig GetConnectionConfig()
@@ -70,6 +78,86 @@ public partial class MainWindowViewModel : ViewModelBase
             Database = SelectedDatabase
         };
     }
+
+    private async Task LoadSettingsAsync()
+    {
+        if (_appSettingsService is null)
+            return;
+
+        _isInitializingSettings = true;
+
+        try
+        {
+            var config = await _appSettingsService.LoadConnectionAsync();
+            Host = config.Host;
+            Port = config.Port.ToString();
+            Username = config.Username;
+            Password = config.Password;
+            SelectedDatabase = config.Database;
+        }
+        catch
+        {
+            // Игнорируем ошибки загрузки настроек, чтобы не мешать работе UI.
+        }
+        finally
+        {
+            _isInitializingSettings = false;
+        }
+    }
+
+    private void ScheduleSaveSettings()
+    {
+        if (_appSettingsService is null || _isInitializingSettings)
+            return;
+
+        _saveCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        _saveCts = cts;
+
+        Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(500, cts.Token);
+                await SaveSettingsInternalAsync();
+            }
+            catch (TaskCanceledException)
+            {
+                // Прерывание задержки – новая правка пользователя.
+            }
+        });
+    }
+
+    private async Task SaveSettingsInternalAsync()
+    {
+        if (_appSettingsService is null)
+            return;
+
+        try
+        {
+            await _saveSemaphore.WaitAsync();
+
+            try
+            {
+                var config = GetConnectionConfig();
+                await _appSettingsService.SaveConnectionAsync(config);
+            }
+            finally
+            {
+                _saveSemaphore.Release();
+            }
+        }
+        catch
+        {
+            // Игнорируем ошибки сохранения, чтобы не блокировать UI.
+        }
+    }
+
+    partial void OnHostChanged(string value) => ScheduleSaveSettings();
+    partial void OnPortChanged(string value) => ScheduleSaveSettings();
+    partial void OnUsernameChanged(string value) => ScheduleSaveSettings();
+    partial void OnPasswordChanged(string value) => ScheduleSaveSettings();
+    partial void OnSelectedDatabaseChanged(string? value) => ScheduleSaveSettings();
 
     [RelayCommand]
     private async Task TestConnectionAsync()
