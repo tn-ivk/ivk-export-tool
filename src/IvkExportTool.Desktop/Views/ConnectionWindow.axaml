@@ -1,0 +1,143 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:IvkExportTool.Desktop.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
+        x:Class="IvkExportTool.Desktop.Views.ConnectionWindow"
+        x:DataType="vm:ConnectionWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="IvkExportTool - Подключение к MySQL"
+        Width="600" Height="500"
+        MinWidth="500" MinHeight="400"
+        WindowStartupLocation="CenterScreen"
+        CanResize="True"
+        Background="{DynamicResource SurfaceBrush}">
+
+  <Design.DataContext>
+    <vm:ConnectionWindowViewModel/>
+  </Design.DataContext>
+
+  <Grid>
+    <Border Classes="card"
+            MaxWidth="500"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Margin="48">
+      <StackPanel Spacing="24">
+
+        <!-- Заголовок -->
+        <StackPanel Spacing="8" HorizontalAlignment="Center">
+          <TextBlock Text="🗄️ IvkExportTool"
+                     Classes="h2"
+                     HorizontalAlignment="Center"/>
+          <TextBlock Text="Подключение к базе данных MySQL"
+                     Classes="body"
+                     Foreground="{StaticResource TextSecondaryBrush}"
+                     HorizontalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Параметры подключения -->
+        <StackPanel Spacing="16">
+          <TextBlock Text="Параметры подключения"
+                     Classes="label"
+                     FontWeight="SemiBold"/>
+
+          <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto">
+            <!-- Host -->
+            <TextBlock Grid.Row="0" Grid.Column="0"
+                       Text="Хост:"
+                       Classes="label"
+                       VerticalAlignment="Center"
+                       Margin="0,0,12,12"/>
+            <TextBox Grid.Row="0" Grid.Column="1"
+                     Text="{Binding Host}"
+                     Watermark="localhost или IP адрес"
+                     Margin="0,0,0,12"/>
+
+            <!-- Port -->
+            <TextBlock Grid.Row="1" Grid.Column="0"
+                       Text="Порт:"
+                       Classes="label"
+                       VerticalAlignment="Center"
+                       Margin="0,0,12,12"/>
+            <TextBox Grid.Row="1" Grid.Column="1"
+                     Text="{Binding Port}"
+                     Watermark="3306"
+                     Margin="0,0,0,12"/>
+
+            <!-- Username -->
+            <TextBlock Grid.Row="2" Grid.Column="0"
+                       Text="Логин:"
+                       Classes="label"
+                       VerticalAlignment="Center"
+                       Margin="0,0,12,12"/>
+            <TextBox Grid.Row="2" Grid.Column="1"
+                     Text="{Binding Username}"
+                     Watermark="root"
+                     Margin="0,0,0,12"/>
+
+            <!-- Password -->
+            <TextBlock Grid.Row="3" Grid.Column="0"
+                       Text="Пароль:"
+                       Classes="label"
+                       VerticalAlignment="Center"
+                       Margin="0,0,12,0"/>
+            <TextBox Grid.Row="3" Grid.Column="1"
+                     Text="{Binding Password}"
+                     PasswordChar="●"
+                     Watermark="password"/>
+          </Grid>
+        </StackPanel>
+
+        <!-- Статус -->
+        <Border Classes="panel"
+                Padding="16,12">
+          <TextBlock Text="{Binding StatusMessage}"
+                     Classes="body"
+                     TextWrapping="Wrap"
+                     HorizontalAlignment="Center">
+            <TextBlock.Styles>
+              <Style Selector="TextBlock">
+                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+              </Style>
+              <Style Selector="TextBlock[IsVisible=True]">
+                <Setter Property="Foreground" Value="{StaticResource SuccessBrush}"/>
+              </Style>
+            </TextBlock.Styles>
+            <TextBlock.IsVisible>
+              <Binding Path="IsStatusSuccess"/>
+            </TextBlock.IsVisible>
+          </TextBlock>
+        </Border>
+
+        <!-- Кнопки -->
+        <Grid ColumnDefinitions="*,*">
+          <Button Grid.Column="0"
+                  Content="Тест подключения"
+                  Classes="secondary"
+                  Command="{Binding TestConnectionCommand}"
+                  IsEnabled="{Binding !IsLoading}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Margin="0,0,6,0"/>
+
+          <Button Grid.Column="1"
+                  Content="Подключиться"
+                  Classes="primary"
+                  Command="{Binding ConnectCommand}"
+                  IsEnabled="{Binding !IsLoading}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Margin="6,0,0,0"/>
+        </Grid>
+
+        <!-- Индикатор загрузки -->
+        <ProgressBar IsIndeterminate="True"
+                     IsVisible="{Binding IsLoading}"
+                     Height="4"/>
+
+      </StackPanel>
+    </Border>
+  </Grid>
+</Window>

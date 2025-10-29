@@ -18,7 +18,7 @@
 
   <Grid>
     <Grid.RowDefinitions>
-      <!-- ConnectionStatusBar - компактная панель состояния (отображается только при подключении) -->
+      <!-- ConnectionStatusBar - компактная панель состояния -->
       <RowDefinition Height="Auto"/>
       <!-- Главная область с таблицами -->
       <RowDefinition Height="*"/>
@@ -29,8 +29,7 @@
     <!-- ========== 1. CONNECTION STATUS BAR ========== -->
     <!-- Компактная панель состояния подключения (40px) -->
     <Border Grid.Row="0"
-            Classes="connection-status-bar"
-            IsVisible="{Binding IsConnected}">
+            Classes="connection-status-bar">
       <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto">
 
         <!-- Индикатор + текст соединения -->
@@ -72,19 +71,11 @@
         </Button>
 
         <Button Grid.Column="4"
-                ToolTip.Tip="Настройки подключения"
-                Classes="icon-button-status"
-                Margin="4,0,0,0">
-          <PathIcon Data="{StaticResource SettingsIcon}"
-                    Width="16" Height="16"/>
-        </Button>
-
-        <Button Grid.Column="5"
-                ToolTip.Tip="Отключиться"
-                Command="{Binding DisconnectCommand}"
+                ToolTip.Tip="Сменить подключение"
+                Command="{Binding ChangeConnectionCommand}"
                 Classes="icon-button-status"
                 Margin="4,0,8,0">
-          <PathIcon Data="{StaticResource DisconnectIcon}"
+          <PathIcon Data="{StaticResource SettingsIcon}"
                     Width="16" Height="16"/>
         </Button>
       </Grid>
@@ -99,99 +90,9 @@
         <RowDefinition Height="*"/>
       </Grid.RowDefinitions>
 
-      <!-- Форма подключения (отображается только когда НЕ подключены) -->
-      <Border Grid.Row="0" Grid.RowSpan="2"
-              IsVisible="{Binding !IsConnected}"
-              Background="{DynamicResource SurfaceBrush}"
-              Padding="48">
-        <Border Classes="card"
-                MaxWidth="600"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center">
-          <StackPanel Spacing="20">
-            <!-- Заголовок -->
-            <TextBlock Text="Подключение к MySQL"
-                       Classes="h3"
-                       HorizontalAlignment="Center"
-                       Margin="0,0,0,8"/>
-
-            <!-- Параметры подключения -->
-            <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto">
-
-              <!-- Host -->
-              <TextBlock Grid.Row="0" Grid.Column="0"
-                         Text="Хост:"
-                         Classes="label"
-                         VerticalAlignment="Center"
-                         Margin="0,0,12,12"/>
-              <TextBox Grid.Row="0" Grid.Column="1"
-                       Text="{Binding Host}"
-                       Watermark="localhost или IP адрес"
-                       Margin="0,0,0,12"/>
-
-              <!-- Port -->
-              <TextBlock Grid.Row="1" Grid.Column="0"
-                         Text="Порт:"
-                         Classes="label"
-                         VerticalAlignment="Center"
-                         Margin="0,0,12,12"/>
-              <TextBox Grid.Row="1" Grid.Column="1"
-                       Text="{Binding Port}"
-                       Watermark="3306"
-                       Margin="0,0,0,12"/>
-
-              <!-- Username -->
-              <TextBlock Grid.Row="2" Grid.Column="0"
-                         Text="Логин:"
-                         Classes="label"
-                         VerticalAlignment="Center"
-                         Margin="0,0,12,12"/>
-              <TextBox Grid.Row="2" Grid.Column="1"
-                       Text="{Binding Username}"
-                       Watermark="root"
-                       Margin="0,0,0,12"/>
-
-              <!-- Password -->
-              <TextBlock Grid.Row="3" Grid.Column="0"
-                         Text="Пароль:"
-                         Classes="label"
-                         VerticalAlignment="Center"
-                         Margin="0,0,12,0"/>
-              <TextBox Grid.Row="3" Grid.Column="1"
-                       Text="{Binding Password}"
-                       PasswordChar="●"
-                       Watermark="password"/>
-            </Grid>
-
-            <!-- Статус -->
-            <TextBlock Text="{Binding StatusMessage}"
-                       Classes="body"
-                       HorizontalAlignment="Center"
-                       TextWrapping="Wrap"/>
-
-            <!-- Кнопки -->
-            <StackPanel Orientation="Horizontal"
-                        HorizontalAlignment="Center"
-                        Spacing="12">
-              <Button Content="Тест подключения"
-                      Classes="secondary"
-                      Command="{Binding TestConnectionCommand}"
-                      IsEnabled="{Binding !IsLoading}"
-                      Width="150"/>
-              <Button Content="Подключиться"
-                      Classes="primary"
-                      Command="{Binding ConnectCommand}"
-                      IsEnabled="{Binding !IsLoading}"
-                      Width="150"/>
-            </StackPanel>
-          </StackPanel>
-        </Border>
-      </Border>
-
-      <!-- ToolBar (отображается только когда подключены) -->
+      <!-- ToolBar -->
       <Border Grid.Row="0"
-              Classes="toolbar"
-              IsVisible="{Binding IsConnected}">
+              Classes="toolbar">
         <Grid ColumnDefinitions="*,Auto,Auto,Auto">
 
           <!-- Поиск -->
@@ -255,7 +156,6 @@
       <!-- DataGrid со списком таблиц -->
       <DataGrid Grid.Row="1"
                 ItemsSource="{Binding FilteredTables}"
-                IsVisible="{Binding IsConnected}"
                 CanUserResizeColumns="True"
                 CanUserSortColumns="True"
                 GridLinesVisibility="Horizontal"
@@ -336,8 +236,7 @@
         <!-- Статистика -->
         <StackPanel Grid.Column="0"
                     Orientation="Horizontal"
-                    Spacing="16"
-                    IsVisible="{Binding IsConnected}">
+                    Spacing="16">
 
           <!-- Выбрано таблиц -->
           <TextBlock Classes="status-text">
@@ -382,18 +281,11 @@
           </Border>
         </StackPanel>
 
-        <!-- Статус когда не подключены -->
-        <TextBlock Grid.Column="0"
-                   Text="{Binding StatusMessage}"
-                   Classes="status-text"
-                   IsVisible="{Binding !IsConnected}"/>
-
         <!-- Кнопка экспорта -->
         <Button Grid.Column="1"
                 Classes="accent export-button"
                 Command="{Binding ExportCommand}"
-                IsEnabled="{Binding HasSelectedTables}"
-                IsVisible="{Binding IsConnected}">
+                IsEnabled="{Binding HasSelectedTables}">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <PathIcon Data="{StaticResource SaveIcon}"
                       Width="16" Height="16"

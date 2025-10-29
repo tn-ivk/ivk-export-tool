@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -9,7 +8,6 @@ using CommunityToolkit.Mvvm.Input;
 using IvkExportTool.Core.Enums;
 using IvkExportTool.Core.Interfaces;
 using IvkExportTool.Core.Models;
-using System.Threading;
 
 namespace IvkExportTool.Desktop.ViewModels;
 
@@ -17,43 +15,7 @@ public partial class MainWindowViewModel : ViewModelBase
 {
     private readonly IDatabaseService _databaseService;
     private readonly IExportService _exportService;
-    private readonly IAppSettingsService? _appSettingsService;
-    private readonly SemaphoreSlim _saveSemaphore = new(1, 1);
-    private CancellationTokenSource? _saveCts;
-    private bool _isInitializingSettings;
-
-    // Параметры подключения
-    [ObservableProperty]
-    private string _host = "192.168.233.101";
-
-    [ObservableProperty]
-    private string _port = "3306";
-
-    [ObservableProperty]
-    private string _username = "user";
-
-    [ObservableProperty]
-    private string _password = "mJKuyb&9!2@m";
-
-    [ObservableProperty]
-    private string? _selectedDatabase;
-
-    // Состояние подключения
-    [ObservableProperty]
-    private bool _isConnected;
-
-    [ObservableProperty]
-    private bool _isLoading;
-
-    [ObservableProperty]
-    private string _statusMessage = "Не подключено";
-
-    // Экспорт
-    [ObservableProperty]
-    private int _exportProgress;
-
-    [ObservableProperty]
-    private bool _isExporting;
+    private ConnectionConfig? _connectionConfig;
 
     // Поиск и фильтрация
     [ObservableProperty]
@@ -81,6 +43,22 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private int _activeFiltersCount;
 
+    // Экспорт
+    [ObservableProperty]
+    private int _exportProgress;
+
+    [ObservableProperty]
+    private bool _isExporting;
+
+    [ObservableProperty]
+    private string _statusMessage = "Загрузка...";
+
+    [ObservableProperty]
+    private bool _isLoading;
+
+    [ObservableProperty]
+    private string? _selectedDatabase;
+
     // Коллекции
     public ObservableCollection<string> Databases { get; } = new();
 
@@ -91,11 +69,11 @@ public partial class MainWindowViewModel : ViewModelBase
     private ObservableCollection<TableItemViewModel> _filteredTables = new();
 
     // Свойства для ConnectionStatusBar
-    public string ConnectionString => IsConnected
-        ? $"{Username}@{Host}:{Port}"
+    public string ConnectionString => _connectionConfig != null
+        ? $"{_connectionConfig.Username}@{_connectionConfig.Host}:{_connectionConfig.Port}"
         : "Не подключено";
 
-    public SolidColorBrush ConnectionStatusColor => IsConnected
+    public SolidColorBrush ConnectionStatusColor => _connectionConfig != null
         ? new SolidColorBrush(Color.Parse("#4caf50"))  // Success green
         : new SolidColorBrush(Color.Parse("#f44336")); // Error red
 
@@ -103,140 +81,72 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public bool HasActiveFilters => ActiveFiltersCount > 0;
 
-    public MainWindowViewModel() : this(null!, null!, null!)
+    // События
+    public event EventHandler? ChangeConnectionRequested;
+
+    public MainWindowViewModel() : this(null!, null!)
     {
         // Конструктор для дизайнера
     }
 
     public MainWindowViewModel(
         IDatabaseService databaseService,
-        IExportService exportService,
-        IAppSettingsService appSettingsService)
+        IExportService exportService)
     {
         _databaseService = databaseService;
         _exportService = exportService;
-        _appSettingsService = appSettingsService;
-
-        _ = LoadSettingsAsync();
     }
 
-    private ConnectionConfig GetConnectionConfig()
+    /// <summary>
+    /// Инициализация с существующим подключением
+    /// </summary>
+    public async Task InitializeWithConnectionAsync(ConnectionConfig connectionConfig)
     {
-        return new ConnectionConfig
-        {
-            Host = Host,
-            Port = int.TryParse(Port, out var port) ? port : 3306,
-            Username = Username,
-            Password = Password,
-            Database = SelectedDatabase
-        };
-    }
+        _connectionConfig = connectionConfig;
+        OnPropertyChanged(nameof(ConnectionString));
+        OnPropertyChanged(nameof(ConnectionStatusColor));
 
-    #region Settings Management
-
-    private async Task LoadSettingsAsync()
-    {
-        if (_appSettingsService is null)
-            return;
-
-        _isInitializingSettings = true;
+        IsLoading = true;
+        StatusMessage = "Загрузка списка баз данных...";
 
         try
         {
-            var config = await _appSettingsService.LoadConnectionAsync();
-            Host = config.Host;
-            Port = config.Port.ToString();
-            Username = config.Username;
-            Password = config.Password;
-            SelectedDatabase = config.Database;
+            var databases = await _databaseService.GetDatabasesAsync(connectionConfig);
+
+            Databases.Clear();
+            foreach (var db in databases)
+            {
+                Databases.Add(db);
+            }
+
+            if (Databases.Count > 0)
+            {
+                SelectedDatabase = Databases[0];
+                await RefreshTablesAsync();
+            }
+            else
+            {
+                StatusMessage = "Не найдено баз данных";
+            }
         }
-        catch
+        catch (Exception ex)
         {
-            // Игнорируем ошибки загрузки
+            StatusMessage = $"Ошибка: {ex.Message}";
         }
         finally
         {
-            _isInitializingSettings = false;
+            IsLoading = false;
         }
     }
-
-    private void ScheduleSaveSettings()
-    {
-        if (_appSettingsService is null || _isInitializingSettings)
-            return;
-
-        _saveCts?.Cancel();
-        var cts = new CancellationTokenSource();
-        _saveCts = cts;
-
-        Task.Run(async () =>
-        {
-            try
-            {
-                await Task.Delay(500, cts.Token);
-                await SaveSettingsInternalAsync();
-            }
-            catch (TaskCanceledException) { }
-        });
-    }
-
-    private async Task SaveSettingsInternalAsync()
-    {
-        if (_appSettingsService is null)
-            return;
-
-        try
-        {
-            await _saveSemaphore.WaitAsync();
-            try
-            {
-                var config = GetConnectionConfig();
-                await _appSettingsService.SaveConnectionAsync(config);
-            }
-            finally
-            {
-                _saveSemaphore.Release();
-            }
-        }
-        catch { }
-    }
-
-    partial void OnHostChanged(string value)
-    {
-        ScheduleSaveSettings();
-        OnPropertyChanged(nameof(ConnectionString));
-    }
-
-    partial void OnPortChanged(string value)
-    {
-        ScheduleSaveSettings();
-        OnPropertyChanged(nameof(ConnectionString));
-    }
-
-    partial void OnUsernameChanged(string value)
-    {
-        ScheduleSaveSettings();
-        OnPropertyChanged(nameof(ConnectionString));
-    }
-
-    partial void OnPasswordChanged(string value) => ScheduleSaveSettings();
 
     partial void OnSelectedDatabaseChanged(string? value)
     {
-        ScheduleSaveSettings();
-        if (!string.IsNullOrEmpty(value) && IsConnected)
+        if (!string.IsNullOrEmpty(value) && _connectionConfig != null)
         {
+            _connectionConfig.Database = value;
             _ = RefreshTablesAsync();
         }
     }
-
-    partial void OnIsConnectedChanged(bool value)
-    {
-        OnPropertyChanged(nameof(ConnectionString));
-        OnPropertyChanged(nameof(ConnectionStatusColor));
-    }
-
-    #endregion
 
     #region Search and Filtering
 
@@ -363,99 +273,39 @@ public partial class MainWindowViewModel : ViewModelBase
     #region Connection Commands
 
     [RelayCommand]
-    private async Task TestConnectionAsync()
+    private void ChangeConnection()
     {
-        IsLoading = true;
-        StatusMessage = "Тестирование подключения...";
-
-        try
-        {
-            var config = GetConnectionConfig();
-            var result = await _databaseService.TestConnectionAsync(config);
-
-            if (result)
-            {
-                StatusMessage = "✓ Подключение успешно";
-            }
-            else
-            {
-                StatusMessage = "✗ Ошибка подключения";
-            }
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"✗ Ошибка: {ex.Message}";
-        }
-        finally
-        {
-            IsLoading = false;
-        }
-    }
-
-    [RelayCommand]
-    private async Task ConnectAsync()
-    {
-        IsLoading = true;
-        StatusMessage = "Подключение...";
-        Databases.Clear();
-
-        try
-        {
-            var config = GetConnectionConfig();
-            var databases = await _databaseService.GetDatabasesAsync(config);
-
-            foreach (var db in databases)
-            {
-                Databases.Add(db);
-            }
-
-            if (Databases.Count > 0)
-            {
-                if (string.IsNullOrEmpty(SelectedDatabase) || !Databases.Contains(SelectedDatabase))
-                {
-                    SelectedDatabase = Databases[0];
-                }
-
-                IsConnected = true;
-                StatusMessage = $"✓ Подключено. Найдено {Databases.Count} баз данных";
-
-                // Автоматически загружаем таблицы
-                await RefreshTablesAsync();
-            }
-            else
-            {
-                StatusMessage = "✗ Не найдено баз данных";
-            }
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"✗ Ошибка: {ex.Message}";
-            IsConnected = false;
-        }
-        finally
-        {
-            IsLoading = false;
-        }
-    }
-
-    [RelayCommand]
-    private void Disconnect()
-    {
-        IsConnected = false;
-        Databases.Clear();
-        AllTables.Clear();
-        FilteredTables.Clear();
-        SelectedDatabase = null;
-        StatusMessage = "Отключено";
-        ClearFilters();
+        ChangeConnectionRequested?.Invoke(this, EventArgs.Empty);
     }
 
     [RelayCommand]
     private async Task RefreshDatabasesAsync()
     {
-        if (!IsConnected) return;
+        if (_connectionConfig == null) return;
 
-        await ConnectAsync();
+        IsLoading = true;
+        StatusMessage = "Обновление списка баз данных...";
+
+        try
+        {
+            var databases = await _databaseService.GetDatabasesAsync(_connectionConfig);
+
+            Databases.Clear();
+            foreach (var db in databases)
+            {
+                Databases.Add(db);
+            }
+
+            StatusMessage = $"Загружено {Databases.Count} баз данных";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Ошибка: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     #endregion
@@ -465,17 +315,18 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task RefreshTablesAsync()
     {
-        if (string.IsNullOrEmpty(SelectedDatabase))
+        if (string.IsNullOrEmpty(SelectedDatabase) || _connectionConfig == null)
             return;
 
         IsLoading = true;
         AllTables.Clear();
         FilteredTables.Clear();
+        StatusMessage = "Загрузка таблиц...";
 
         try
         {
-            var config = GetConnectionConfig();
-            var dbInfo = await _databaseService.GetDatabaseInfoAsync(config);
+            _connectionConfig.Database = SelectedDatabase;
+            var dbInfo = await _databaseService.GetDatabaseInfoAsync(_connectionConfig);
 
             foreach (var table in dbInfo.Tables)
             {
@@ -484,11 +335,11 @@ public partial class MainWindowViewModel : ViewModelBase
             }
 
             ApplyFilters();
-            StatusMessage = $"✓ Загружено {AllTables.Count} таблиц из базы '{SelectedDatabase}'";
+            StatusMessage = $"Загружено {AllTables.Count} таблиц из базы '{SelectedDatabase}'";
         }
         catch (Exception ex)
         {
-            StatusMessage = $"✗ Ошибка загрузки таблиц: {ex.Message}";
+            StatusMessage = $"Ошибка загрузки таблиц: {ex.Message}";
         }
         finally
         {
@@ -539,6 +390,8 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task ExportAsync()
     {
+        if (_connectionConfig == null) return;
+
         var selectedTables = FilteredTables
             .Where(t => t.IsSelected)
             .Select(t => t.GetTableInfo())
@@ -559,7 +412,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
         try
         {
-            var config = GetConnectionConfig();
             var options = new ExportOptions
             {
                 OutputPath = outputPath,
@@ -576,7 +428,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 ExportProgress = percent;
             });
 
-            var result = await _exportService.ExportAsync(config, options, progress);
+            var result = await _exportService.ExportAsync(_connectionConfig, options, progress);
 
             if (result.Success)
             {
