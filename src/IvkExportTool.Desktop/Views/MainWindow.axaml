@@ -3,248 +3,406 @@
         xmlns:vm="using:IvkExportTool.Desktop.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="700"
+        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
         x:Class="IvkExportTool.Desktop.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="IVK Export Tool - MySQL Database Exporter"
-        Width="900" Height="700"
-        MinWidth="800" MinHeight="600"
+        Title="IvkExportTool - MySQL Database Exporter"
+        Width="1200" Height="800"
+        MinWidth="600" MinHeight="400"
         Background="{DynamicResource SurfaceBrush}">
 
   <Design.DataContext>
     <vm:MainWindowViewModel/>
   </Design.DataContext>
 
-  <Grid Margin="32">
+  <Grid>
     <Grid.RowDefinitions>
+      <!-- ConnectionStatusBar - компактная панель состояния (отображается только при подключении) -->
       <RowDefinition Height="Auto"/>
-      <RowDefinition Height="Auto"/>
+      <!-- Главная область с таблицами -->
       <RowDefinition Height="*"/>
-      <RowDefinition Height="Auto"/>
+      <!-- StatusBar - нижняя панель с кнопкой экспорта -->
       <RowDefinition Height="Auto"/>
     </Grid.RowDefinitions>
 
-    <!-- Заголовок -->
-    <TextBlock Grid.Row="0"
-               Text="MySQL Database Exporter"
-               Classes="h2"
-               Margin="0,0,0,24"/>
+    <!-- ========== 1. CONNECTION STATUS BAR ========== -->
+    <!-- Компактная панель состояния подключения (40px) -->
+    <Border Grid.Row="0"
+            Classes="connection-status-bar"
+            IsVisible="{Binding IsConnected}">
+      <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto">
 
-    <!-- Параметры подключения -->
-    <Border Grid.Row="1" Classes="card" Margin="0,0,0,16">
-      <StackPanel>
-        <TextBlock Text="Параметры подключения"
-                   Classes="h4"
-                   Margin="0,0,0,16"/>
+        <!-- Индикатор + текст соединения -->
+        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+          <Ellipse Width="10" Height="10"
+                   Fill="{Binding ConnectionStatusColor}"
+                   VerticalAlignment="Center"/>
+          <TextBlock Text="{Binding ConnectionString}"
+                     Foreground="White"
+                     FontSize="13"
+                     VerticalAlignment="Center"/>
+        </StackPanel>
 
-        <Grid>
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
-          </Grid.ColumnDefinitions>
-          <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-          </Grid.RowDefinitions>
-
-          <!-- Host -->
-          <TextBlock Grid.Row="0" Grid.Column="0"
-                     Text="Host:"
-                     Classes="label"
-                     VerticalAlignment="Center"
-                     Margin="0,0,12,0"/>
-          <TextBox Grid.Row="0" Grid.Column="1"
-                   Text="{Binding Host}"
-                   Watermark="localhost"
-                   Margin="0,0,24,12"/>
-
-          <!-- Port -->
-          <TextBlock Grid.Row="0" Grid.Column="2"
-                     Text="Port:"
-                     Classes="label"
-                     VerticalAlignment="Center"
-                     Margin="0,0,12,0"/>
-          <TextBox Grid.Row="0" Grid.Column="3"
-                   Text="{Binding Port}"
-                   Watermark="3306"
-                   Width="120"
-                   HorizontalAlignment="Left"
-                   Margin="0,0,0,12"/>
-
-          <!-- Username -->
-          <TextBlock Grid.Row="1" Grid.Column="0"
-                     Text="Username:"
-                     Classes="label"
-                     VerticalAlignment="Center"
-                     Margin="0,0,12,0"/>
-          <TextBox Grid.Row="1" Grid.Column="1"
-                   Text="{Binding Username}"
-                   Watermark="root"
-                   Margin="0,0,24,12"/>
-
-          <!-- Password -->
-          <TextBlock Grid.Row="1" Grid.Column="2"
-                     Text="Password:"
-                     Classes="label"
-                     VerticalAlignment="Center"
-                     Margin="0,0,12,0"/>
-          <TextBox Grid.Row="1" Grid.Column="3"
-                   Text="{Binding Password}"
-                   PasswordChar="*"
-                   Watermark="password"
-                   Margin="0,0,0,12"/>
-
-          <!-- Кнопки -->
-          <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4"
-                      Orientation="Horizontal"
-                      HorizontalAlignment="Right"
-                      Margin="0,16,0,0">
-            <Button Content="Тест подключения"
-                    Classes="secondary"
-                    Command="{Binding TestConnectionCommand}"
-                    IsEnabled="{Binding !IsLoading}"
-                    Margin="0,0,12,0"/>
-            <Button Content="Подключиться"
-                    Classes="primary"
-                    Command="{Binding ConnectCommand}"
-                    IsEnabled="{Binding !IsLoading}"/>
-          </StackPanel>
-        </Grid>
-      </StackPanel>
-    </Border>
-
-    <!-- База данных и таблицы -->
-    <Border Grid.Row="2" Classes="card" Margin="0,0,0,16" IsEnabled="{Binding IsConnected}">
-      <Grid>
-        <Grid.RowDefinitions>
-          <RowDefinition Height="Auto"/>
-          <RowDefinition Height="*"/>
-          <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+        <!-- Разделитель -->
+        <Border Grid.Column="1" Width="1"
+                Background="#40FFFFFF"
+                Margin="12,8"/>
 
         <!-- Выбор базы данных -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,16">
-          <TextBlock Text="База данных:"
-                     Classes="label"
-                     VerticalAlignment="Center"
-                     Margin="0,0,12,0"/>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" Margin="4,0">
+          <TextBlock Text="БД:"
+                     Foreground="White"
+                     FontSize="13"
+                     VerticalAlignment="Center"/>
           <ComboBox ItemsSource="{Binding Databases}"
                     SelectedItem="{Binding SelectedDatabase}"
-                    MinWidth="220"
-                    Margin="0,0,12,0"/>
-          <Button Content="Обновить таблицы"
-                  Classes="outlined"
-                  Command="{Binding RefreshTablesCommand}"/>
+                    MinWidth="200" MaxWidth="350"
+                    Height="28"
+                    VerticalAlignment="Center"/>
         </StackPanel>
 
-        <!-- Список таблиц -->
-        <Border Grid.Row="1"
-                Background="{DynamicResource BackgroundBrush}"
-                BorderBrush="{DynamicResource BorderLightBrush}"
-                BorderThickness="1"
-                CornerRadius="6">
-          <ScrollViewer>
-            <ItemsControl ItemsSource="{Binding Tables}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                  <Border BorderBrush="{DynamicResource BorderLightBrush}"
-                          BorderThickness="0,0,0,1"
-                          Padding="16,12">
-                    <Grid>
-                      <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                      </Grid.ColumnDefinitions>
+        <!-- Кнопки управления -->
+        <Button Grid.Column="3"
+                ToolTip.Tip="Обновить список БД"
+                Command="{Binding RefreshDatabasesCommand}"
+                Classes="icon-button-status">
+          <PathIcon Data="{StaticResource RefreshIcon}"
+                    Width="16" Height="16"/>
+        </Button>
 
-                      <CheckBox Grid.Column="0"
-                                IsChecked="{Binding IsSelected}"
-                                Margin="0,0,16,0"/>
-                      <TextBlock Grid.Column="1"
-                                 Text="{Binding Name}"
-                                 Classes="body"
-                                 FontWeight="Medium"
-                                 VerticalAlignment="Center"/>
-                      <TextBlock Grid.Column="2"
-                                 Text="{Binding RowCount, StringFormat='Rows: {0}'}"
-                                 Classes="caption"
-                                 VerticalAlignment="Center"
-                                 Margin="16,0"/>
-                      <TextBlock Grid.Column="3"
-                                 Text="{Binding Engine}"
-                                 Classes="caption"
-                                 VerticalAlignment="Center"/>
-                    </Grid>
-                  </Border>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </ScrollViewer>
-        </Border>
+        <Button Grid.Column="4"
+                ToolTip.Tip="Настройки подключения"
+                Classes="icon-button-status"
+                Margin="4,0,0,0">
+          <PathIcon Data="{StaticResource SettingsIcon}"
+                    Width="16" Height="16"/>
+        </Button>
 
-        <!-- Кнопки управления таблицами -->
-        <StackPanel Grid.Row="2"
-                    Orientation="Horizontal"
-                    HorizontalAlignment="Right"
-                    Margin="0,16,0,0">
-          <Button Content="Выбрать все"
-                  Classes="secondary"
-                  Command="{Binding SelectAllTablesCommand}"
-                  Margin="0,0,12,0"/>
-          <Button Content="Снять выбор"
-                  Classes="outlined"
-                  Command="{Binding DeselectAllTablesCommand}"/>
-        </StackPanel>
+        <Button Grid.Column="5"
+                ToolTip.Tip="Отключиться"
+                Command="{Binding DisconnectCommand}"
+                Classes="icon-button-status"
+                Margin="4,0,8,0">
+          <PathIcon Data="{StaticResource DisconnectIcon}"
+                    Width="16" Height="16"/>
+        </Button>
       </Grid>
     </Border>
 
-    <!-- Прогресс экспорта -->
-    <Border Grid.Row="3"
-            Classes="panel"
-            Margin="0,0,0,16"
-            IsVisible="{Binding IsExporting}">
-      <StackPanel>
-        <TextBlock Text="Экспорт данных..."
-                   Classes="body"
-                   FontWeight="Medium"
-                   Margin="0,0,0,8"/>
-        <ProgressBar Value="{Binding ExportProgress}"
-                     Minimum="0"
-                     Maximum="100"
-                     Height="8"/>
-        <TextBlock Text="{Binding ExportProgress, StringFormat='Прогресс: {0}%'}"
-                   Classes="caption"
-                   HorizontalAlignment="Center"
-                   Margin="0,8,0,0"/>
-      </StackPanel>
-    </Border>
+    <!-- ========== 2. MAIN CONTENT AREA ========== -->
+    <Grid Grid.Row="1">
+      <Grid.RowDefinitions>
+        <!-- ToolBar с поиском и фильтрами -->
+        <RowDefinition Height="Auto"/>
+        <!-- DataGrid со списком таблиц -->
+        <RowDefinition Height="*"/>
+      </Grid.RowDefinitions>
 
-    <!-- Статус и кнопка экспорта -->
-    <Grid Grid.Row="4">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="*"/>
-        <ColumnDefinition Width="Auto"/>
-      </Grid.ColumnDefinitions>
+      <!-- Форма подключения (отображается только когда НЕ подключены) -->
+      <Border Grid.Row="0" Grid.RowSpan="2"
+              IsVisible="{Binding !IsConnected}"
+              Background="{DynamicResource SurfaceBrush}"
+              Padding="48">
+        <Border Classes="card"
+                MaxWidth="600"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center">
+          <StackPanel Spacing="20">
+            <!-- Заголовок -->
+            <TextBlock Text="Подключение к MySQL"
+                       Classes="h3"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,8"/>
 
-      <TextBlock Grid.Column="0"
-                 Text="{Binding StatusMessage}"
-                 Classes="body"
-                 VerticalAlignment="Center"
-                 TextWrapping="Wrap"/>
-      <Button Grid.Column="1"
-              Content="Экспортировать"
-              Classes="primary"
-              Command="{Binding ExportCommand}"
-              IsEnabled="{Binding !IsExporting}"
-              Padding="32,12"
-              FontWeight="Medium"
-              FontSize="16"/>
+            <!-- Параметры подключения -->
+            <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto">
+
+              <!-- Host -->
+              <TextBlock Grid.Row="0" Grid.Column="0"
+                         Text="Хост:"
+                         Classes="label"
+                         VerticalAlignment="Center"
+                         Margin="0,0,12,12"/>
+              <TextBox Grid.Row="0" Grid.Column="1"
+                       Text="{Binding Host}"
+                       Watermark="localhost или IP адрес"
+                       Margin="0,0,0,12"/>
+
+              <!-- Port -->
+              <TextBlock Grid.Row="1" Grid.Column="0"
+                         Text="Порт:"
+                         Classes="label"
+                         VerticalAlignment="Center"
+                         Margin="0,0,12,12"/>
+              <TextBox Grid.Row="1" Grid.Column="1"
+                       Text="{Binding Port}"
+                       Watermark="3306"
+                       Margin="0,0,0,12"/>
+
+              <!-- Username -->
+              <TextBlock Grid.Row="2" Grid.Column="0"
+                         Text="Логин:"
+                         Classes="label"
+                         VerticalAlignment="Center"
+                         Margin="0,0,12,12"/>
+              <TextBox Grid.Row="2" Grid.Column="1"
+                       Text="{Binding Username}"
+                       Watermark="root"
+                       Margin="0,0,0,12"/>
+
+              <!-- Password -->
+              <TextBlock Grid.Row="3" Grid.Column="0"
+                         Text="Пароль:"
+                         Classes="label"
+                         VerticalAlignment="Center"
+                         Margin="0,0,12,0"/>
+              <TextBox Grid.Row="3" Grid.Column="1"
+                       Text="{Binding Password}"
+                       PasswordChar="●"
+                       Watermark="password"/>
+            </Grid>
+
+            <!-- Статус -->
+            <TextBlock Text="{Binding StatusMessage}"
+                       Classes="body"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap"/>
+
+            <!-- Кнопки -->
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Center"
+                        Spacing="12">
+              <Button Content="Тест подключения"
+                      Classes="secondary"
+                      Command="{Binding TestConnectionCommand}"
+                      IsEnabled="{Binding !IsLoading}"
+                      Width="150"/>
+              <Button Content="Подключиться"
+                      Classes="primary"
+                      Command="{Binding ConnectCommand}"
+                      IsEnabled="{Binding !IsLoading}"
+                      Width="150"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </Border>
+
+      <!-- ToolBar (отображается только когда подключены) -->
+      <Border Grid.Row="0"
+              Classes="toolbar"
+              IsVisible="{Binding IsConnected}">
+        <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+
+          <!-- Поиск -->
+          <TextBox Grid.Column="0"
+                   Watermark="🔍 Поиск таблиц..."
+                   Text="{Binding SearchText}"
+                   Classes="search-box"
+                   Margin="0,0,8,0"/>
+
+          <!-- Кнопки -->
+          <Button Grid.Column="1"
+                  Content="✓ Все"
+                  Command="{Binding SelectAllTablesCommand}"
+                  Classes="toolbar-button"
+                  Margin="0,0,8,0"/>
+
+          <Button Grid.Column="2"
+                  Content="✗ Сброс"
+                  Command="{Binding DeselectAllTablesCommand}"
+                  Classes="toolbar-button"
+                  Margin="0,0,8,0"/>
+
+          <DropDownButton Grid.Column="3"
+                          Content="🎯 Фильтр"
+                          Classes="toolbar-button">
+            <DropDownButton.Flyout>
+              <MenuFlyout Placement="BottomEdgeAlignedRight">
+                <MenuItem Header="По размеру">
+                  <MenuItem Header="> 1 MB"
+                            Command="{Binding FilterBySizeCommand}"
+                            CommandParameter="1"/>
+                  <MenuItem Header="> 10 MB"
+                            Command="{Binding FilterBySizeCommand}"
+                            CommandParameter="10"/>
+                  <MenuItem Header="> 100 MB"
+                            Command="{Binding FilterBySizeCommand}"
+                            CommandParameter="100"/>
+                </MenuItem>
+                <MenuItem Header="По строкам">
+                  <MenuItem Header="> 1,000"
+                            Command="{Binding FilterByRowsCommand}"
+                            CommandParameter="1000"/>
+                  <MenuItem Header="> 10,000"
+                            Command="{Binding FilterByRowsCommand}"
+                            CommandParameter="10000"/>
+                  <MenuItem Header="> 100,000"
+                            Command="{Binding FilterByRowsCommand}"
+                            CommandParameter="100000"/>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="Показать только пустые"
+                          Command="{Binding ShowEmptyTablesCommand}"/>
+                <MenuItem Header="Сбросить фильтры"
+                          Command="{Binding ClearFiltersCommand}"/>
+              </MenuFlyout>
+            </DropDownButton.Flyout>
+          </DropDownButton>
+        </Grid>
+      </Border>
+
+      <!-- DataGrid со списком таблиц -->
+      <DataGrid Grid.Row="1"
+                ItemsSource="{Binding FilteredTables}"
+                IsVisible="{Binding IsConnected}"
+                CanUserResizeColumns="True"
+                CanUserSortColumns="True"
+                GridLinesVisibility="Horizontal"
+                SelectionMode="Extended"
+                IsReadOnly="True"
+                Classes="tables-grid"
+                AutoGenerateColumns="False">
+
+        <DataGrid.Columns>
+          <!-- Чекбокс для выбора -->
+          <DataGridTemplateColumn Width="50" CanUserResize="False">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <CheckBox IsChecked="{Binding IsSelected}"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"/>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+
+          <!-- Иконка типа таблицы -->
+          <DataGridTemplateColumn Width="40" CanUserResize="False">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <PathIcon Data="{DynamicResource GenericTableIcon}"
+                          Width="16" Height="16"
+                          Foreground="{StaticResource SecondaryBrush}"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"/>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+
+          <!-- Название таблицы -->
+          <DataGridTextColumn Header="Таблица"
+                              Binding="{Binding Name}"
+                              Width="*"
+                              MinWidth="150"
+                              FontFamily="Consolas"
+                              FontSize="13"/>
+
+          <!-- Количество строк -->
+          <DataGridTextColumn Header="Строки"
+                              Binding="{Binding RowCount, StringFormat='{}{0:N0}'}"
+                              Width="120"
+                              FontFamily="Consolas"
+                              FontSize="13"/>
+
+          <!-- Размер -->
+          <DataGridTextColumn Header="Размер"
+                              Binding="{Binding SizeFormatted}"
+                              Width="100"
+                              FontFamily="Consolas"
+                              FontSize="13"/>
+
+          <!-- Engine -->
+          <DataGridTextColumn Header="Engine"
+                              Binding="{Binding Engine}"
+                              Width="80"
+                              FontSize="13"/>
+
+          <!-- Последнее обновление -->
+          <DataGridTextColumn Header="Обновлено"
+                              Binding="{Binding LastUpdateFormatted}"
+                              Width="150"
+                              FontSize="13"/>
+        </DataGrid.Columns>
+      </DataGrid>
+
     </Grid>
+
+    <!-- ========== 3. STATUS BAR ========== -->
+    <!-- Нижняя панель со статистикой и кнопкой экспорта -->
+    <Border Grid.Row="2" Classes="status-bar">
+      <Grid ColumnDefinitions="*,Auto">
+
+        <!-- Статистика -->
+        <StackPanel Grid.Column="0"
+                    Orientation="Horizontal"
+                    Spacing="16"
+                    IsVisible="{Binding IsConnected}">
+
+          <!-- Выбрано таблиц -->
+          <TextBlock Classes="status-text">
+            <Run Text="✓ Выбрано:"/>
+            <Run Text="{Binding SelectedCount}"
+                 FontWeight="SemiBold"
+                 Foreground="{StaticResource PrimaryBrush}"/>
+            <Run Text="таблиц"/>
+          </TextBlock>
+
+          <TextBlock Text="•"
+                     Foreground="{StaticResource BorderBrush}"
+                     VerticalAlignment="Center"/>
+
+          <!-- Общее количество строк -->
+          <TextBlock Classes="status-text">
+            <Run Text="{Binding TotalRows, StringFormat='{}{0:N0}'}"/>
+            <Run Text="строк"/>
+          </TextBlock>
+
+          <TextBlock Text="•"
+                     Foreground="{StaticResource BorderBrush}"
+                     VerticalAlignment="Center"/>
+
+          <!-- Общий размер -->
+          <TextBlock Classes="status-text">
+            <Run Text="{Binding TotalSize}"/>
+          </TextBlock>
+
+          <!-- Индикатор активных фильтров -->
+          <Border Classes="filter-badge"
+                  IsVisible="{Binding HasActiveFilters}">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <PathIcon Data="{StaticResource FilterIcon}"
+                        Width="12" Height="12"
+                        Foreground="White"/>
+              <TextBlock Text="{Binding ActiveFiltersCount}"
+                         Foreground="White"
+                         FontSize="11"
+                         FontWeight="SemiBold"/>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <!-- Статус когда не подключены -->
+        <TextBlock Grid.Column="0"
+                   Text="{Binding StatusMessage}"
+                   Classes="status-text"
+                   IsVisible="{Binding !IsConnected}"/>
+
+        <!-- Кнопка экспорта -->
+        <Button Grid.Column="1"
+                Classes="accent export-button"
+                Command="{Binding ExportCommand}"
+                IsEnabled="{Binding HasSelectedTables}"
+                IsVisible="{Binding IsConnected}">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <PathIcon Data="{StaticResource SaveIcon}"
+                      Width="16" Height="16"
+                      Foreground="White"/>
+            <TextBlock Text="Экспортировать SQL"
+                       FontWeight="SemiBold"/>
+          </StackPanel>
+        </Button>
+      </Grid>
+    </Border>
 
   </Grid>
 </Window>

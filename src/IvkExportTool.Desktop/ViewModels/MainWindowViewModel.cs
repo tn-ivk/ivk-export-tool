@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using IvkExportTool.Core.Enums;
@@ -20,6 +22,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private CancellationTokenSource? _saveCts;
     private bool _isInitializingSettings;
 
+    // Параметры подключения
     [ObservableProperty]
     private string _host = "192.168.233.101";
 
@@ -35,9 +38,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private string? _selectedDatabase;
 
-    [ObservableProperty]
-    private string _statusMessage = "Не подключено";
-
+    // Состояние подключения
     [ObservableProperty]
     private bool _isConnected;
 
@@ -45,20 +46,72 @@ public partial class MainWindowViewModel : ViewModelBase
     private bool _isLoading;
 
     [ObservableProperty]
+    private string _statusMessage = "Не подключено";
+
+    // Экспорт
+    [ObservableProperty]
     private int _exportProgress;
 
     [ObservableProperty]
     private bool _isExporting;
 
+    // Поиск и фильтрация
+    [ObservableProperty]
+    private string _searchText = string.Empty;
+
+    [ObservableProperty]
+    private long? _minSizeFilter;
+
+    [ObservableProperty]
+    private long? _minRowsFilter;
+
+    [ObservableProperty]
+    private bool _showEmptyTablesOnly;
+
+    // Статистика
+    [ObservableProperty]
+    private int _selectedCount;
+
+    [ObservableProperty]
+    private long _totalRows;
+
+    [ObservableProperty]
+    private string _totalSize = "0 B";
+
+    [ObservableProperty]
+    private int _activeFiltersCount;
+
+    // Коллекции
     public ObservableCollection<string> Databases { get; } = new();
-    public ObservableCollection<TableInfo> Tables { get; } = new();
+
+    [ObservableProperty]
+    private ObservableCollection<TableItemViewModel> _allTables = new();
+
+    [ObservableProperty]
+    private ObservableCollection<TableItemViewModel> _filteredTables = new();
+
+    // Свойства для ConnectionStatusBar
+    public string ConnectionString => IsConnected
+        ? $"{Username}@{Host}:{Port}"
+        : "Не подключено";
+
+    public SolidColorBrush ConnectionStatusColor => IsConnected
+        ? new SolidColorBrush(Color.Parse("#4caf50"))  // Success green
+        : new SolidColorBrush(Color.Parse("#f44336")); // Error red
+
+    public bool HasSelectedTables => SelectedCount > 0;
+
+    public bool HasActiveFilters => ActiveFiltersCount > 0;
 
     public MainWindowViewModel() : this(null!, null!, null!)
     {
         // Конструктор для дизайнера
     }
 
-    public MainWindowViewModel(IDatabaseService databaseService, IExportService exportService, IAppSettingsService appSettingsService)
+    public MainWindowViewModel(
+        IDatabaseService databaseService,
+        IExportService exportService,
+        IAppSettingsService appSettingsService)
     {
         _databaseService = databaseService;
         _exportService = exportService;
@@ -79,6 +132,8 @@ public partial class MainWindowViewModel : ViewModelBase
         };
     }
 
+    #region Settings Management
+
     private async Task LoadSettingsAsync()
     {
         if (_appSettingsService is null)
@@ -97,7 +152,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         catch
         {
-            // Игнорируем ошибки загрузки настроек, чтобы не мешать работе UI.
+            // Игнорируем ошибки загрузки
         }
         finally
         {
@@ -121,10 +176,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 await Task.Delay(500, cts.Token);
                 await SaveSettingsInternalAsync();
             }
-            catch (TaskCanceledException)
-            {
-                // Прерывание задержки – новая правка пользователя.
-            }
+            catch (TaskCanceledException) { }
         });
     }
 
@@ -136,7 +188,6 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             await _saveSemaphore.WaitAsync();
-
             try
             {
                 var config = GetConnectionConfig();
@@ -147,17 +198,169 @@ public partial class MainWindowViewModel : ViewModelBase
                 _saveSemaphore.Release();
             }
         }
-        catch
+        catch { }
+    }
+
+    partial void OnHostChanged(string value)
+    {
+        ScheduleSaveSettings();
+        OnPropertyChanged(nameof(ConnectionString));
+    }
+
+    partial void OnPortChanged(string value)
+    {
+        ScheduleSaveSettings();
+        OnPropertyChanged(nameof(ConnectionString));
+    }
+
+    partial void OnUsernameChanged(string value)
+    {
+        ScheduleSaveSettings();
+        OnPropertyChanged(nameof(ConnectionString));
+    }
+
+    partial void OnPasswordChanged(string value) => ScheduleSaveSettings();
+
+    partial void OnSelectedDatabaseChanged(string? value)
+    {
+        ScheduleSaveSettings();
+        if (!string.IsNullOrEmpty(value) && IsConnected)
         {
-            // Игнорируем ошибки сохранения, чтобы не блокировать UI.
+            _ = RefreshTablesAsync();
         }
     }
 
-    partial void OnHostChanged(string value) => ScheduleSaveSettings();
-    partial void OnPortChanged(string value) => ScheduleSaveSettings();
-    partial void OnUsernameChanged(string value) => ScheduleSaveSettings();
-    partial void OnPasswordChanged(string value) => ScheduleSaveSettings();
-    partial void OnSelectedDatabaseChanged(string? value) => ScheduleSaveSettings();
+    partial void OnIsConnectedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ConnectionString));
+        OnPropertyChanged(nameof(ConnectionStatusColor));
+    }
+
+    #endregion
+
+    #region Search and Filtering
+
+    partial void OnSearchTextChanged(string value)
+    {
+        ApplyFilters();
+    }
+
+    partial void OnMinSizeFilterChanged(long? value)
+    {
+        UpdateActiveFiltersCount();
+        ApplyFilters();
+    }
+
+    partial void OnMinRowsFilterChanged(long? value)
+    {
+        UpdateActiveFiltersCount();
+        ApplyFilters();
+    }
+
+    partial void OnShowEmptyTablesOnlyChanged(bool value)
+    {
+        UpdateActiveFiltersCount();
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        var filtered = AllTables.AsEnumerable();
+
+        // Поиск по имени
+        if (!string.IsNullOrWhiteSpace(SearchText))
+        {
+            filtered = filtered.Where(t =>
+                t.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Фильтр по размеру
+        if (MinSizeFilter.HasValue)
+        {
+            filtered = filtered.Where(t => t.SizeInBytes >= MinSizeFilter.Value);
+        }
+
+        // Фильтр по количеству строк
+        if (MinRowsFilter.HasValue)
+        {
+            filtered = filtered.Where(t => t.RowCount >= MinRowsFilter.Value);
+        }
+
+        // Показывать только пустые таблицы
+        if (ShowEmptyTablesOnly)
+        {
+            filtered = filtered.Where(t => t.RowCount == 0);
+        }
+
+        FilteredTables = new ObservableCollection<TableItemViewModel>(filtered);
+
+        // Подписываемся на изменения IsSelected для обновления статистики
+        foreach (var table in FilteredTables)
+        {
+            table.PropertyChanged -= Table_PropertyChanged;
+            table.PropertyChanged += Table_PropertyChanged;
+        }
+
+        UpdateStatistics();
+    }
+
+    private void Table_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(TableItemViewModel.IsSelected))
+        {
+            UpdateStatistics();
+        }
+    }
+
+    private void UpdateStatistics()
+    {
+        var selected = FilteredTables.Where(t => t.IsSelected).ToList();
+        SelectedCount = selected.Count;
+        TotalRows = selected.Sum(t => t.RowCount);
+        TotalSize = FormatBytes(selected.Sum(t => t.SizeInBytes));
+
+        OnPropertyChanged(nameof(HasSelectedTables));
+    }
+
+    private void UpdateActiveFiltersCount()
+    {
+        int count = 0;
+        if (MinSizeFilter.HasValue) count++;
+        if (MinRowsFilter.HasValue) count++;
+        if (ShowEmptyTablesOnly) count++;
+
+        ActiveFiltersCount = count;
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes == 0) return "0 B";
+
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        double size = bytes;
+        int order = 0;
+
+        while (size >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            size /= 1024;
+        }
+
+        return $"{size:0.##} {sizes[order]}";
+    }
+
+    [RelayCommand]
+    private void ClearFilters()
+    {
+        MinSizeFilter = null;
+        MinRowsFilter = null;
+        ShowEmptyTablesOnly = false;
+        SearchText = string.Empty;
+    }
+
+    #endregion
+
+    #region Connection Commands
 
     [RelayCommand]
     private async Task TestConnectionAsync()
@@ -208,11 +411,15 @@ public partial class MainWindowViewModel : ViewModelBase
 
             if (Databases.Count > 0)
             {
-                SelectedDatabase = Databases[0];
+                if (string.IsNullOrEmpty(SelectedDatabase) || !Databases.Contains(SelectedDatabase))
+                {
+                    SelectedDatabase = Databases[0];
+                }
+
                 IsConnected = true;
                 StatusMessage = $"✓ Подключено. Найдено {Databases.Count} баз данных";
 
-                // Автоматически загружаем таблицы первой БД
+                // Автоматически загружаем таблицы
                 await RefreshTablesAsync();
             }
             else
@@ -232,13 +439,38 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void Disconnect()
+    {
+        IsConnected = false;
+        Databases.Clear();
+        AllTables.Clear();
+        FilteredTables.Clear();
+        SelectedDatabase = null;
+        StatusMessage = "Отключено";
+        ClearFilters();
+    }
+
+    [RelayCommand]
+    private async Task RefreshDatabasesAsync()
+    {
+        if (!IsConnected) return;
+
+        await ConnectAsync();
+    }
+
+    #endregion
+
+    #region Table Commands
+
+    [RelayCommand]
     private async Task RefreshTablesAsync()
     {
         if (string.IsNullOrEmpty(SelectedDatabase))
             return;
 
         IsLoading = true;
-        Tables.Clear();
+        AllTables.Clear();
+        FilteredTables.Clear();
 
         try
         {
@@ -247,10 +479,12 @@ public partial class MainWindowViewModel : ViewModelBase
 
             foreach (var table in dbInfo.Tables)
             {
-                Tables.Add(table);
+                var tableVm = new TableItemViewModel(table);
+                AllTables.Add(tableVm);
             }
 
-            StatusMessage = $"✓ Загружено {Tables.Count} таблиц из базы '{SelectedDatabase}'";
+            ApplyFilters();
+            StatusMessage = $"✓ Загружено {AllTables.Count} таблиц из базы '{SelectedDatabase}'";
         }
         catch (Exception ex)
         {
@@ -265,7 +499,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private void SelectAllTables()
     {
-        foreach (var table in Tables)
+        foreach (var table in FilteredTables)
         {
             table.IsSelected = true;
         }
@@ -274,16 +508,41 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private void DeselectAllTables()
     {
-        foreach (var table in Tables)
+        foreach (var table in FilteredTables)
         {
             table.IsSelected = false;
         }
     }
 
     [RelayCommand]
+    private void FilterBySize(long minSizeMB)
+    {
+        MinSizeFilter = minSizeMB * 1024 * 1024; // Convert MB to bytes
+    }
+
+    [RelayCommand]
+    private void FilterByRows(long minRows)
+    {
+        MinRowsFilter = minRows;
+    }
+
+    [RelayCommand]
+    private void ShowEmptyTables()
+    {
+        ShowEmptyTablesOnly = !ShowEmptyTablesOnly;
+    }
+
+    #endregion
+
+    #region Export Commands
+
+    [RelayCommand]
     private async Task ExportAsync()
     {
-        var selectedTables = Tables.Where(t => t.IsSelected).ToList();
+        var selectedTables = FilteredTables
+            .Where(t => t.IsSelected)
+            .Select(t => t.GetTableInfo())
+            .ToList();
 
         if (selectedTables.Count == 0)
         {
@@ -291,7 +550,6 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
-        // Диалог сохранения файла (упрощенный вариант - используем текущую директорию)
         var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
         var outputPath = $"{SelectedDatabase}_{timestamp}.sql";
 
@@ -322,7 +580,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
             if (result.Success)
             {
-                StatusMessage = $"✓ Экспорт завершен: {result.TablesExported} таблиц, {result.RowsExported} строк. Файл: {result.OutputPath}";
+                StatusMessage = $"✓ Экспорт завершен: {result.TablesExported} таблиц, {result.RowsExported:N0} строк. Файл: {result.OutputPath}";
             }
             else
             {
@@ -339,4 +597,6 @@ public partial class MainWindowViewModel : ViewModelBase
             ExportProgress = 0;
         }
     }
+
+    #endregion
 }

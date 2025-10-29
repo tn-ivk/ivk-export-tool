@@ -13,6 +13,12 @@
 
     <Style>
       <Style.Resources>
+        <!-- Подключение иконок -->
+        <ResourceDictionary>
+          <ResourceDictionary.MergedDictionaries>
+            <ResourceInclude Source="/Styles/Icons.axaml"/>
+          </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
         <!-- Primary Colors -->
         <Color x:Key="Primary">#546e7a</Color>
         <Color x:Key="PrimaryHover">#607d8b</Color>
@@ -234,6 +240,125 @@
     <!-- CheckBox Style -->
     <Style Selector="CheckBox">
       <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+    </Style>
+
+    <!-- ========== Connection Status Bar ========== -->
+    <Style Selector="Border.connection-status-bar">
+      <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+      <Setter Property="Height" Value="40"/>
+      <Setter Property="Padding" Value="12,0"/>
+    </Style>
+
+    <Style Selector="Button.icon-button-status">
+      <Setter Property="Width" Value="32"/>
+      <Setter Property="Height" Value="28"/>
+      <Setter Property="Padding" Value="4"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="CornerRadius" Value="4"/>
+    </Style>
+
+    <Style Selector="Button.icon-button-status:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource PrimaryHoverBrush}"/>
+    </Style>
+
+    <!-- ========== Toolbar ========== -->
+    <Style Selector="Border.toolbar">
+      <Setter Property="Background" Value="{StaticResource SurfaceVariantBrush}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+      <Setter Property="BorderThickness" Value="0,0,0,1"/>
+      <Setter Property="Padding" Value="12"/>
+      <Setter Property="Height" Value="48"/>
+    </Style>
+
+    <Style Selector="TextBox.search-box">
+      <Setter Property="MinWidth" Value="250"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+
+    <Style Selector="Button.toolbar-button">
+      <Setter Property="Padding" Value="12,6"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="FontSize" Value="13"/>
+    </Style>
+
+    <Style Selector="Button.toolbar-button:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource BorderBrush}"/>
+    </Style>
+
+    <Style Selector="DropDownButton.toolbar-button">
+      <Setter Property="Padding" Value="12,6"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="FontSize" Value="13"/>
+    </Style>
+
+    <!-- ========== DataGrid ========== -->
+    <Style Selector="DataGrid.tables-grid">
+      <Setter Property="Background" Value="{StaticResource BackgroundBrush}"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="RowBackground" Value="Transparent"/>
+      <Setter Property="HeadersVisibility" Value="Column"/>
+    </Style>
+
+    <Style Selector="DataGrid.tables-grid DataGridRow">
+      <Setter Property="Height" Value="40"/>
+    </Style>
+
+    <Style Selector="DataGrid.tables-grid DataGridRow:pointerover /template/ Rectangle#BackgroundRectangle">
+      <Setter Property="Fill" Value="{StaticResource SurfaceContainerBrush}"/>
+    </Style>
+
+    <Style Selector="DataGrid.tables-grid DataGridRow:selected /template/ Rectangle#BackgroundRectangle">
+      <Setter Property="Fill" Value="#e3f2fd"/>
+    </Style>
+
+    <Style Selector="DataGrid.tables-grid DataGridColumnHeader">
+      <Setter Property="Background" Value="{StaticResource SurfaceVariantBrush}"/>
+      <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Padding" Value="12,8"/>
+      <Setter Property="FontSize" Value="13"/>
+    </Style>
+
+    <!-- ========== Status Bar ========== -->
+    <Style Selector="Border.status-bar">
+      <Setter Property="Background" Value="{StaticResource SurfaceVariantBrush}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+      <Setter Property="BorderThickness" Value="0,1,0,0"/>
+      <Setter Property="Height" Value="48"/>
+      <Setter Property="Padding" Value="16,0"/>
+    </Style>
+
+    <Style Selector="TextBlock.status-text">
+      <Setter Property="VerticalAlignment" Value="Center"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+    </Style>
+
+    <!-- ========== Accent Button (Export) ========== -->
+    <Style Selector="Button.accent">
+      <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="Padding" Value="16,8"/>
+      <Setter Property="CornerRadius" Value="4"/>
+      <Setter Property="FontSize" Value="14"/>
+    </Style>
+
+    <Style Selector="Button.accent:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource PrimaryHoverBrush}"/>
+    </Style>
+
+    <Style Selector="Button.accent:disabled /template/ ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource BorderBrush}"/>
+      <Setter Property="Foreground" Value="#999"/>
+    </Style>
+
+    <!-- ========== Filter Badge ========== -->
+    <Style Selector="Border.filter-badge">
+      <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+      <Setter Property="CornerRadius" Value="10"/>
+      <Setter Property="Padding" Value="8,2"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
 
   </Application.Styles>
