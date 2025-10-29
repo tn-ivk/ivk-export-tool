@@ -19,6 +19,7 @@
   </Design.DataContext>
 
   <Grid>
+    <!-- Слой основного контента -->
     <Border Classes="card"
             MaxWidth="500"
             HorizontalAlignment="Center"
@@ -115,5 +116,8 @@
 
       </StackPanel>
     </Border>
+
+    <!-- Слой для уведомлений (не влияет на layout основного контента) -->
+    <Panel x:Name="NotificationPanel" />
   </Grid>
 </Window>

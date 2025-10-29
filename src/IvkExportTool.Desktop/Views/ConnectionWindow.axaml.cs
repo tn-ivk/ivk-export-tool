@@ -16,18 +16,23 @@ public partial class ConnectionWindow : Window
     public ConnectionWindow()
     {
         InitializeComponent();
-        InitializeNotificationManager();
 
         DataContextChanged += OnDataContextChanged;
+        Opened += OnWindowOpened;
     }
 
-    private void InitializeNotificationManager()
+    private void OnWindowOpened(object? sender, EventArgs e)
     {
-        _notificationManager = new WindowNotificationManager(this)
+        // Инициализируем WindowNotificationManager после полной загрузки окна
+        // чтобы избежать проблем с layout
+        if (_notificationManager == null)
         {
-            Position = NotificationPosition.TopRight,
-            MaxItems = 1
-        };
+            _notificationManager = new WindowNotificationManager(this)
+            {
+                Position = NotificationPosition.TopRight,
+                MaxItems = 1
+            };
+        }
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -102,6 +107,9 @@ public partial class ConnectionWindow : Window
         {
             _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
         }
+
+        Opened -= OnWindowOpened;
+        DataContextChanged -= OnDataContextChanged;
 
         base.OnClosed(e);
     }
