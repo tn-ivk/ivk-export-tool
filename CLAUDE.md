@@ -8,13 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Технологический стек
 
-- **.NET 8.0**
-- **Avalonia UI 11.x** - кроссплатформенный GUI фреймворк
-- **MySqlConnector** - подключение к MySQL базам данных
-- **ReactiveUI** - MVVM паттерн
-- **EPPlus** - экспорт в Excel
-- **CsvHelper** - экспорт в CSV
-- **NUnit** - тестирование
+- **.NET 9.0**
+- **Avalonia UI 11.3.6** - кроссплатформенный GUI фреймворк
+- **MySqlConnector 2.4.0** - подключение к MySQL базам данных
+- **CommunityToolkit.Mvvm 8.2.1** - MVVM паттерн
+- **NUnit 4.2.2** - тестирование
 
 ## Архитектура проекта
 
@@ -157,19 +155,17 @@ dotnet publish src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj \
 ### Avalonia UI специфика
 
 - AXAML файлы используют отступ 2 пробела
-- ViewModels наследуются от `ReactiveObject` или `ViewModelBase`
-- Используется ReactiveUI для связывания данных
-- Команды реализуются через `ReactiveCommand`
+- ViewModels наследуются от `ObservableObject` (CommunityToolkit.Mvvm) или `ViewModelBase`
+- Используется CommunityToolkit.Mvvm для MVVM паттерна
+- Команды реализуются через `RelayCommand` и `AsyncRelayCommand`
+- Включен `AvaloniaUseCompiledBindingsByDefault` для лучшей производительности
 
 ## CI/CD
 
 Проект использует GitHub Actions:
 
-- **build-and-test.yml** - автоматическая сборка и тесты на push/PR
-- **publish.yml** - создание релизов при создании тега версии
-- **build-deb.yml** - сборка .deb пакета для Debian/Ubuntu
-- **coverage.yml** - генерация отчетов о покрытии кода
-- **dependency-update.yml** - проверка устаревших пакетов
+- **build-and-test.yml** - автоматическая сборка и тесты на push/PR (Ubuntu и Windows)
+- **publish.yml** - создание релизов при создании тега версии (Windows x64, Linux x64, macOS x64)
 
 ### Создание релиза
 
@@ -182,24 +178,24 @@ git push origin v1.0.0
 ## Ключевые зависимости
 
 ### Core проект
-- Не имеет внешних зависимостей (только .NET 8.0)
+- Не имеет внешних зависимостей (только .NET 9.0)
 
 ### Infrastructure проект
-- `MySqlConnector` 2.3.7+ - подключение к MySQL
-- `EPPlus` 7.1.2+ - генерация Excel файлов
-- `CsvHelper` 33.0.1+ - работа с CSV
+- `MySqlConnector` 2.4.0 - подключение к MySQL
 
 ### Desktop проект
-- `Avalonia` 11.1.3+ - UI фреймворк
-- `Avalonia.ReactiveUI` - MVVM с ReactiveUI
-- `Microsoft.Extensions.DependencyInjection` 8.0+ - DI контейнер
-- `Microsoft.Extensions.Configuration` 8.0+ - конфигурация
+- `Avalonia` 11.3.6 - UI фреймворк
+- `Avalonia.Desktop` 11.3.6 - поддержка десктопных платформ
+- `Avalonia.Themes.Fluent` 11.3.6 - Fluent дизайн тема
+- `CommunityToolkit.Mvvm` 8.2.1 - MVVM паттерн
+- `Microsoft.Extensions.DependencyInjection` 9.0.10 - DI контейнер
+- `Microsoft.Extensions.Configuration.Json` 9.0.10 - конфигурация
 
 ### Tests проект
-- `NUnit` - фреймворк для тестирования
-- `Moq` 4.20.72+ - мокирование
-- `FluentAssertions` 6.12.0+ - assertion библиотека
-- `coverlet.collector` 6.0.2+ - покрытие кода
+- `NUnit` 4.2.2 - фреймворк для тестирования
+- `Moq` 4.20.72 - мокирование
+- `FluentAssertions` 8.8.0 - assertion библиотека
+- `coverlet.collector` 6.0.2 - покрытие кода
 
 ## Важные замечания
 
