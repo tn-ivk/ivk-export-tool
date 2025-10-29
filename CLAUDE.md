@@ -24,16 +24,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 IvkExportTool/
 ├── src/
 │   ├── IvkExportTool.Core/          # Domain Layer
-│   │   ├── Models/                  # Бизнес-модели (ConnectionConfig, TableInfo, etc.)
-│   │   ├── Interfaces/              # Интерфейсы сервисов
+│   │   ├── Models/                  # Бизнес-модели (ConnectionConfig, DatabaseInfo, TableInfo, ExportOptions, ExportResult)
+│   │   ├── Interfaces/              # Интерфейсы сервисов (IDatabaseService, IExportService)
 │   │   └── Enums/                   # Перечисления (ExportFormat, ConnectionStatus)
 │   ├── IvkExportTool.Infrastructure/  # Data Access Layer
-│   │   ├── Services/                # Реализация сервисов (MySqlService, ExportService)
-│   │   └── Exporters/               # Экспортеры для разных форматов
+│   │   └── Services/                # Реализация сервисов (MySqlDatabaseService, SqlExportService)
 │   └── IvkExportTool.Desktop/       # Presentation Layer
-│       ├── ViewModels/              # MVVM ViewModels (ReactiveUI)
+│       ├── ViewModels/              # MVVM ViewModels (CommunityToolkit.Mvvm)
 │       ├── Views/                   # Avalonia AXAML представления
-│       └── Services/                # UI-специфичные сервисы
+│       └── Models/                  # UI модели и обёртки
 └── tests/
     └── IvkExportTool.Tests/         # Unit тесты (NUnit)
 ```
