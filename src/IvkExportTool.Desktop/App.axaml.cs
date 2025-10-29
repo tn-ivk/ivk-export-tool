@@ -27,6 +27,7 @@ public partial class App : Application
         var services = new ServiceCollection();
 
         // Регистрация сервисов
+        services.AddSingleton<IAppSettingsService, AppSettingsService>();
         services.AddSingleton<IDatabaseService, MySqlDatabaseService>();
         services.AddSingleton<IExportService, SqlExportService>();
 

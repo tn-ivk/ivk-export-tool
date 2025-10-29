@@ -1,4 +1,4 @@
-namespace IvkExportTool.Core.Models;
+﻿namespace IvkExportTool.Core.Models;
 
 /// <summary>
 /// Конфигурация подключения к MySQL базе данных
@@ -8,7 +8,7 @@ public class ConnectionConfig
     /// <summary>
     /// IP адрес или хост сервера MySQL
     /// </summary>
-    public string Host { get; set; } = "localhost";
+    public string Host { get; set; } = "192.168.233.101";
 
     /// <summary>
     /// Порт сервера MySQL (по умолчанию 3306)
@@ -18,12 +18,12 @@ public class ConnectionConfig
     /// <summary>
     /// Имя пользователя для подключения
     /// </summary>
-    public string Username { get; set; } = string.Empty;
+    public string Username { get; set; } = "user";
 
     /// <summary>
     /// Пароль для подключения
     /// </summary>
-    public string Password { get; set; } = string.Empty;
+    public string Password { get; set; } = "mJKuyb&9!2@m";
 
     /// <summary>
     /// Имя базы данных (опционально, можно выбрать после подключения)
@@ -44,3 +44,4 @@ public class ConnectionConfig
         return builder;
     }
 }
+
