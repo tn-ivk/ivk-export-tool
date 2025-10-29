@@ -11,7 +11,6 @@ namespace IvkExportTool.Infrastructure.Services;
 
 public class AppSettingsService : IAppSettingsService
 {
-    private const string SettingsDirectoryName = "IvkExportTool";
     private const string SettingsFileName = "appsettings.json";
 
     private readonly string _settingsPath;
@@ -19,11 +18,8 @@ public class AppSettingsService : IAppSettingsService
 
     public AppSettingsService()
     {
-        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        var settingsDirectory = Path.Combine(appData, SettingsDirectoryName);
-        Directory.CreateDirectory(settingsDirectory);
-
-        _settingsPath = Path.Combine(settingsDirectory, SettingsFileName);
+        var baseDirectory = AppContext.BaseDirectory;
+        _settingsPath = Path.Combine(baseDirectory, SettingsFileName);
         _jsonOptions = new JsonSerializerOptions
         {
             WriteIndented = true
