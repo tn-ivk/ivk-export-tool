@@ -21,10 +21,9 @@
   <Grid>
     <!-- Слой основного контента -->
     <Border Classes="card"
-            MaxWidth="500"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center"
-            Margin="5">
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            Margin="20">
       <StackPanel Spacing="24">
 
         <!-- Заголовок -->
