@@ -296,7 +296,6 @@
     <Style Selector="DataGrid.tables-grid">
       <Setter Property="Background" Value="{StaticResource BackgroundBrush}"/>
       <Setter Property="BorderThickness" Value="0"/>
-      <Setter Property="RowBackground" Value="Transparent"/>
       <Setter Property="HeadersVisibility" Value="Column"/>
     </Style>
 
