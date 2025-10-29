@@ -7,7 +7,7 @@
         x:Class="IvkExportTool.Desktop.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="IvkExportTool - MySQL Database Exporter"
+        Title="IvkExportTool - Подключение к БД ИВК"
         Width="1200" Height="800"
         MinWidth="600" MinHeight="400"
         Background="{DynamicResource SurfaceBrush}">
