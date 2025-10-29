@@ -106,14 +106,29 @@ public partial class App : Application
 
     private void OnChangeConnectionRequested(object? sender, System.EventArgs e)
     {
-        if (_desktop == null) return;
+        if (_desktop == null || Services == null) return;
 
-        // Закрываем главное окно
-        _mainWindow?.Close();
+        // Сохраняем ссылку на старое окно
+        var oldMainWindow = _mainWindow;
+
+        // Создаём окно подключения
+        var viewModel = Services.GetRequiredService<ConnectionWindowViewModel>();
+
+        _connectionWindow = new ConnectionWindow
+        {
+            DataContext = viewModel
+        };
+
+        // Подписываемся на событие успешного подключения
+        viewModel.ConnectionSucceeded += OnConnectionSucceeded;
+
+        // ВАЖНО: Сначала устанавливаем новое главное окно
+        _desktop.MainWindow = _connectionWindow;
+        _connectionWindow.Show();
+
+        // Затем закрываем старое главное окно
+        oldMainWindow?.Close();
         _mainWindow = null;
-
-        // Показываем окно подключения
-        ShowConnectionWindow();
     }
 
     private void DisableAvaloniaDataAnnotationValidation()
