@@ -121,20 +121,19 @@ public partial class MainWindowViewModel : ViewModelBase
 
             if (Databases.Count > 0)
             {
+                // Устанавливаем первую БД, что автоматически вызовет OnSelectedDatabaseChanged
+                // и загрузит таблицы через RefreshTablesAsync (который сам управляет IsLoading)
                 SelectedDatabase = Databases[0];
-                await RefreshTablesAsync();
             }
             else
             {
                 StatusMessage = "Не найдено баз данных";
+                IsLoading = false;
             }
         }
         catch (Exception ex)
         {
             StatusMessage = $"Ошибка: {ex.Message}";
-        }
-        finally
-        {
             IsLoading = false;
         }
     }
