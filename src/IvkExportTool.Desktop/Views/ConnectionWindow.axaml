@@ -30,17 +30,13 @@
         <!-- Заголовок -->
         <StackPanel Spacing="8" HorizontalAlignment="Center">
           <TextBlock Text="Подключение к базе данных ИВК"
-                     Classes="h2"
+                     Classes="h3"
                      Foreground="{StaticResource TextSecondaryBrush}"
                      HorizontalAlignment="Center"/>
         </StackPanel>
 
         <!-- Параметры подключения -->
         <StackPanel Spacing="16">
-          <TextBlock Text="Параметры подключения"
-                     Classes="label"
-                     FontWeight="SemiBold"/>
-
           <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto">
             <!-- Host -->
             <TextBlock Grid.Row="0" Grid.Column="0"
