@@ -157,7 +157,7 @@
       <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
       <Setter Property="BorderThickness" Value="1"/>
       <Setter Property="CornerRadius" Value="{StaticResource RadiusMedium}"/>
-      <Setter Property="Padding" Value="12,10"/>
+      <Setter Property="Padding" Value="12,6"/>
       <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
       <Setter Property="FontSize" Value="14"/>
     </Style>
@@ -172,7 +172,7 @@
       <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
       <Setter Property="BorderThickness" Value="1"/>
       <Setter Property="CornerRadius" Value="{StaticResource RadiusMedium}"/>
-      <Setter Property="Padding" Value="12,10"/>
+      <Setter Property="Padding" Value="12,6"/>
       <Setter Property="FontSize" Value="14"/>
     </Style>
 
@@ -277,7 +277,7 @@
     </Style>
 
     <Style Selector="Button.toolbar-button">
-      <Setter Property="Padding" Value="12,6"/>
+      <Setter Property="Padding" Value="12,4"/>
       <Setter Property="Background" Value="Transparent"/>
       <Setter Property="FontSize" Value="13"/>
     </Style>
@@ -287,7 +287,7 @@
     </Style>
 
     <Style Selector="DropDownButton.toolbar-button">
-      <Setter Property="Padding" Value="12,6"/>
+      <Setter Property="Padding" Value="12,4"/>
       <Setter Property="Background" Value="Transparent"/>
       <Setter Property="FontSize" Value="13"/>
     </Style>
@@ -357,6 +357,87 @@
       <Setter Property="CornerRadius" Value="10"/>
       <Setter Property="Padding" Value="8,2"/>
       <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- ========== Notification Styles ========== -->
+    <!-- Базовый стиль для всех уведомлений -->
+    <Style Selector="NotificationCard">
+      <Setter Property="CornerRadius" Value="{StaticResource RadiusLarge}"/>
+      <Setter Property="Margin" Value="8"/>
+    </Style>
+
+    <Style Selector="NotificationCard /template/ Border">
+      <Setter Property="MinWidth" Value="300"/>
+      <Setter Property="MaxWidth" Value="400"/>
+      <Setter Property="Padding" Value="12"/>
+      <Setter Property="BoxShadow" Value="0 4 12 0 #33000000"/>
+      <Setter Property="CornerRadius" Value="{StaticResource RadiusLarge}"/>
+    </Style>
+
+    <!-- Success уведомления (зелёный фон) -->
+    <Style Selector="NotificationCard /template/ Border#PART_HeaderBar">
+      <Setter Property="Background" Value="{StaticResource SuccessBackgroundBrush}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource SuccessBrush}"/>
+      <Setter Property="BorderThickness" Value="0,0,0,2"/>
+    </Style>
+
+    <Style Selector="NotificationCard[NotificationType=Success] /template/ Border#PART_HeaderBar">
+      <Setter Property="Background" Value="{StaticResource SuccessBackgroundBrush}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource SuccessBrush}"/>
+      <Setter Property="BorderThickness" Value="0,0,0,3"/>
+    </Style>
+
+    <Style Selector="NotificationCard[NotificationType=Success]">
+      <Setter Property="Background" Value="{StaticResource SuccessBackgroundBrush}"/>
+    </Style>
+
+    <Style Selector="NotificationCard[NotificationType=Success] TextBlock">
+      <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+    </Style>
+
+    <!-- Error уведомления (красный фон) -->
+    <Style Selector="NotificationCard[NotificationType=Error] /template/ Border#PART_HeaderBar">
+      <Setter Property="Background" Value="{StaticResource ErrorBackgroundBrush}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource ErrorBrush}"/>
+      <Setter Property="BorderThickness" Value="0,0,0,3"/>
+    </Style>
+
+    <Style Selector="NotificationCard[NotificationType=Error]">
+      <Setter Property="Background" Value="{StaticResource ErrorBackgroundBrush}"/>
+    </Style>
+
+    <Style Selector="NotificationCard[NotificationType=Error] TextBlock">
+      <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+    </Style>
+
+    <!-- Warning уведомления (оранжевый фон) -->
+    <Style Selector="NotificationCard[NotificationType=Warning] /template/ Border#PART_HeaderBar">
+      <Setter Property="Background" Value="{StaticResource WarningBackgroundBrush}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource WarningBrush}"/>
+      <Setter Property="BorderThickness" Value="0,0,0,3"/>
+    </Style>
+
+    <Style Selector="NotificationCard[NotificationType=Warning]">
+      <Setter Property="Background" Value="{StaticResource WarningBackgroundBrush}"/>
+    </Style>
+
+    <Style Selector="NotificationCard[NotificationType=Warning] TextBlock">
+      <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+    </Style>
+
+    <!-- Information уведомления (синий фон) -->
+    <Style Selector="NotificationCard[NotificationType=Information] /template/ Border#PART_HeaderBar">
+      <Setter Property="Background" Value="{StaticResource InfoBackgroundBrush}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource InfoBrush}"/>
+      <Setter Property="BorderThickness" Value="0,0,0,3"/>
+    </Style>
+
+    <Style Selector="NotificationCard[NotificationType=Information]">
+      <Setter Property="Background" Value="{StaticResource InfoBackgroundBrush}"/>
+    </Style>
+
+    <Style Selector="NotificationCard[NotificationType=Information] TextBlock">
+      <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
     </Style>
 
   </Application.Styles>
