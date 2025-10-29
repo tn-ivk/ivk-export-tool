@@ -20,6 +20,7 @@ public partial class App : Application
     private IClassicDesktopStyleApplicationLifetime? _desktop;
     private ConnectionWindow? _connectionWindow;
     private MainWindow? _mainWindow;
+    private PixelPoint? _lastWindowPosition;
 
     public override void Initialize()
     {
@@ -81,16 +82,29 @@ public partial class App : Application
     {
         if (_desktop == null || Services == null) return;
 
+        // Сохраняем позицию окна подключения
+        if (_connectionWindow != null)
+        {
+            SaveWindowPosition(_connectionWindow);
+        }
+
         // Создаём главное окно
         var mainViewModel = Services.GetRequiredService<MainWindowViewModel>();
 
         _mainWindow = new MainWindow
         {
-            DataContext = mainViewModel
+            DataContext = mainViewModel,
+            WindowStartupLocation = WindowStartupLocation.Manual
         };
 
         // Подписываемся на событие смены подключения
         mainViewModel.ChangeConnectionRequested += OnChangeConnectionRequested;
+
+        // Обработчик для установки позиции после открытия окна
+        _mainWindow.Opened += (s, e) =>
+        {
+            RestoreWindowPositionOnSameScreen(_mainWindow);
+        };
 
         // Инициализируем MainWindow с подключением
         await mainViewModel.InitializeWithConnectionAsync(connectionConfig);
@@ -108,6 +122,12 @@ public partial class App : Application
     {
         if (_desktop == null || Services == null) return;
 
+        // Сохраняем позицию главного окна
+        if (_mainWindow != null)
+        {
+            SaveWindowPosition(_mainWindow);
+        }
+
         // Сохраняем ссылку на старое окно
         var oldMainWindow = _mainWindow;
 
@@ -116,11 +136,18 @@ public partial class App : Application
 
         _connectionWindow = new ConnectionWindow
         {
-            DataContext = viewModel
+            DataContext = viewModel,
+            WindowStartupLocation = WindowStartupLocation.Manual
         };
 
         // Подписываемся на событие успешного подключения
         viewModel.ConnectionSucceeded += OnConnectionSucceeded;
+
+        // Обработчик для установки позиции после открытия окна
+        _connectionWindow.Opened += (s, e) =>
+        {
+            RestoreWindowPositionOnSameScreen(_connectionWindow);
+        };
 
         // ВАЖНО: Сначала устанавливаем новое главное окно
         _desktop.MainWindow = _connectionWindow;
@@ -141,6 +168,48 @@ public partial class App : Application
         foreach (var plugin in dataValidationPluginsToRemove)
         {
             BindingPlugins.DataValidators.Remove(plugin);
+        }
+    }
+
+    /// <summary>
+    /// Сохраняет позицию окна для последующего восстановления на том же мониторе
+    /// </summary>
+    private void SaveWindowPosition(Window window)
+    {
+        if (window.WindowState == WindowState.Normal)
+        {
+            _lastWindowPosition = window.Position;
+        }
+    }
+
+    /// <summary>
+    /// Устанавливает позицию окна на том же мониторе, где было предыдущее окно
+    /// </summary>
+    private void RestoreWindowPositionOnSameScreen(Window window)
+    {
+        if (!_lastWindowPosition.HasValue || window.Screens == null)
+            return;
+
+        // Находим монитор, который содержит последнюю сохранённую позицию
+        var targetScreen = window.Screens.All.FirstOrDefault(screen =>
+            screen.WorkingArea.Contains(_lastWindowPosition.Value))
+            ?? window.Screens.Primary;
+
+        if (targetScreen != null)
+        {
+            // Центрируем окно на найденном мониторе
+            var screenCenter = targetScreen.WorkingArea.Center;
+            var windowWidth = (int)(window.Width > 0 ? window.Width : window.MinWidth);
+            var windowHeight = (int)(window.Height > 0 ? window.Height : window.MinHeight);
+
+            var x = screenCenter.X - windowWidth / 2;
+            var y = screenCenter.Y - windowHeight / 2;
+
+            // Корректируем позицию, чтобы окно не выходило за границы экрана
+            x = Math.Max(targetScreen.WorkingArea.X, Math.Min(x, targetScreen.WorkingArea.Right - windowWidth));
+            y = Math.Max(targetScreen.WorkingArea.Y, Math.Min(y, targetScreen.WorkingArea.Bottom - windowHeight));
+
+            window.Position = new PixelPoint(x, y);
         }
     }
 }
