@@ -259,6 +259,7 @@
                 CanUserResizeColumns="True"
                 CanUserSortColumns="True"
                 GridLinesVisibility="Horizontal"
+                HeadersVisibility="Column"
                 SelectionMode="Extended"
                 IsReadOnly="True"
                 Classes="tables-grid"
