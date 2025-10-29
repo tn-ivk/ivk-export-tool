@@ -2,14 +2,239 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="IvkExportTool.Desktop.App"
              xmlns:local="using:IvkExportTool.Desktop"
-             RequestedThemeVariant="Default">
-             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+             RequestedThemeVariant="Light">
 
-    <Application.DataTemplates>
-        <local:ViewLocator/>
-    </Application.DataTemplates>
-  
-    <Application.Styles>
-        <FluentTheme />
-    </Application.Styles>
+  <Application.DataTemplates>
+    <local:ViewLocator/>
+  </Application.DataTemplates>
+
+  <Application.Styles>
+    <FluentTheme />
+
+    <Style>
+      <Style.Resources>
+        <!-- Primary Colors -->
+        <Color x:Key="Primary">#546e7a</Color>
+        <Color x:Key="PrimaryHover">#607d8b</Color>
+        <Color x:Key="PrimaryActive">#455a64</Color>
+
+        <!-- Secondary Colors -->
+        <Color x:Key="Secondary">#78909c</Color>
+        <Color x:Key="SecondaryHover">#90a4ae</Color>
+
+        <!-- Tertiary Colors -->
+        <Color x:Key="Tertiary">#607d8b</Color>
+
+        <!-- Tonal Palette -->
+        <Color x:Key="Tone95">#eceff1</Color>
+        <Color x:Key="Tone90">#cfd8dc</Color>
+        <Color x:Key="Tone80">#b0bec5</Color>
+        <Color x:Key="Tone70">#90a4ae</Color>
+        <Color x:Key="Tone60">#78909c</Color>
+        <Color x:Key="Tone50">#546e7a</Color>
+        <Color x:Key="Tone40">#455a64</Color>
+        <Color x:Key="Tone30">#37474f</Color>
+        <Color x:Key="Tone20">#263238</Color>
+
+        <!-- Surface Colors (Light Theme) -->
+        <Color x:Key="Surface">#fafafa</Color>
+        <Color x:Key="SurfaceVariant">#eceff1</Color>
+        <Color x:Key="SurfaceContainer">#f5f5f5</Color>
+        <Color x:Key="Background">#ffffff</Color>
+
+        <!-- Functional Colors -->
+        <Color x:Key="Success">#4caf50</Color>
+        <Color x:Key="SuccessBackground">#e8f5e9</Color>
+        <Color x:Key="Error">#f44336</Color>
+        <Color x:Key="ErrorBackground">#ffebee</Color>
+        <Color x:Key="Warning">#ff9800</Color>
+        <Color x:Key="WarningBackground">#fff3e0</Color>
+        <Color x:Key="Info">#2196f3</Color>
+        <Color x:Key="InfoBackground">#e3f2fd</Color>
+
+        <!-- Text Colors -->
+        <Color x:Key="TextPrimary">#263238</Color>
+        <Color x:Key="TextSecondary">#546e7a</Color>
+        <Color x:Key="TextDisabled">#99263238</Color>
+        <Color x:Key="TextOnPrimary">#ffffff</Color>
+
+        <!-- Border Colors -->
+        <Color x:Key="Border">#cfd8dc</Color>
+        <Color x:Key="BorderLight">#eceff1</Color>
+
+        <!-- Brushes -->
+        <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource Primary}"/>
+        <SolidColorBrush x:Key="PrimaryHoverBrush" Color="{StaticResource PrimaryHover}"/>
+        <SolidColorBrush x:Key="PrimaryActiveBrush" Color="{StaticResource PrimaryActive}"/>
+        <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource Secondary}"/>
+        <SolidColorBrush x:Key="SecondaryHoverBrush" Color="{StaticResource SecondaryHover}"/>
+        <SolidColorBrush x:Key="TertiaryBrush" Color="{StaticResource Tertiary}"/>
+
+        <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource Surface}"/>
+        <SolidColorBrush x:Key="SurfaceVariantBrush" Color="{StaticResource SurfaceVariant}"/>
+        <SolidColorBrush x:Key="SurfaceContainerBrush" Color="{StaticResource SurfaceContainer}"/>
+        <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource Background}"/>
+
+        <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource Success}"/>
+        <SolidColorBrush x:Key="SuccessBackgroundBrush" Color="{StaticResource SuccessBackground}"/>
+        <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource Error}"/>
+        <SolidColorBrush x:Key="ErrorBackgroundBrush" Color="{StaticResource ErrorBackground}"/>
+        <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource Warning}"/>
+        <SolidColorBrush x:Key="WarningBackgroundBrush" Color="{StaticResource WarningBackground}"/>
+        <SolidColorBrush x:Key="InfoBrush" Color="{StaticResource Info}"/>
+        <SolidColorBrush x:Key="InfoBackgroundBrush" Color="{StaticResource InfoBackground}"/>
+
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimary}"/>
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondary}"/>
+        <SolidColorBrush x:Key="TextDisabledBrush" Color="{StaticResource TextDisabled}"/>
+        <SolidColorBrush x:Key="TextOnPrimaryBrush" Color="{StaticResource TextOnPrimary}"/>
+
+        <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource Border}"/>
+        <SolidColorBrush x:Key="BorderLightBrush" Color="{StaticResource BorderLight}"/>
+
+        <!-- Spacing -->
+        <Thickness x:Key="SpacingXS">4</Thickness>
+        <Thickness x:Key="SpacingSM">8</Thickness>
+        <Thickness x:Key="SpacingMD">16</Thickness>
+        <Thickness x:Key="SpacingLG">24</Thickness>
+        <Thickness x:Key="SpacingXL">32</Thickness>
+
+        <!-- Border Radius -->
+        <CornerRadius x:Key="RadiusSmall">4</CornerRadius>
+        <CornerRadius x:Key="RadiusMedium">6</CornerRadius>
+        <CornerRadius x:Key="RadiusLarge">8</CornerRadius>
+        <CornerRadius x:Key="RadiusXLarge">12</CornerRadius>
+      </Style.Resources>
+    </Style>
+
+    <!-- Button Styles -->
+    <Style Selector="Button.primary">
+      <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+      <Setter Property="Foreground" Value="{StaticResource TextOnPrimaryBrush}"/>
+      <Setter Property="CornerRadius" Value="{StaticResource RadiusMedium}"/>
+      <Setter Property="Padding" Value="24,10"/>
+      <Setter Property="FontWeight" Value="Medium"/>
+      <Setter Property="FontSize" Value="14"/>
+    </Style>
+    <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource PrimaryHoverBrush}"/>
+    </Style>
+    <Style Selector="Button.primary:pressed /template/ ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource PrimaryActiveBrush}"/>
+    </Style>
+
+    <Style Selector="Button.secondary">
+      <Setter Property="Background" Value="{StaticResource SecondaryBrush}"/>
+      <Setter Property="Foreground" Value="{StaticResource TextOnPrimaryBrush}"/>
+      <Setter Property="CornerRadius" Value="{StaticResource RadiusMedium}"/>
+      <Setter Property="Padding" Value="24,10"/>
+      <Setter Property="FontWeight" Value="Medium"/>
+      <Setter Property="FontSize" Value="14"/>
+    </Style>
+    <Style Selector="Button.secondary:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource SecondaryHoverBrush}"/>
+    </Style>
+
+    <Style Selector="Button.outlined">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="{StaticResource RadiusMedium}"/>
+      <Setter Property="Padding" Value="24,10"/>
+      <Setter Property="FontSize" Value="14"/>
+    </Style>
+
+    <!-- TextBox Styles -->
+    <Style Selector="TextBox">
+      <Setter Property="Background" Value="{StaticResource BackgroundBrush}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="{StaticResource RadiusMedium}"/>
+      <Setter Property="Padding" Value="12,10"/>
+      <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+      <Setter Property="FontSize" Value="14"/>
+    </Style>
+    <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+      <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+      <Setter Property="BorderThickness" Value="2"/>
+    </Style>
+
+    <!-- ComboBox Styles -->
+    <Style Selector="ComboBox">
+      <Setter Property="Background" Value="{StaticResource BackgroundBrush}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="{StaticResource RadiusMedium}"/>
+      <Setter Property="Padding" Value="12,10"/>
+      <Setter Property="FontSize" Value="14"/>
+    </Style>
+
+    <!-- Border Styles -->
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="{StaticResource BackgroundBrush}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="{StaticResource RadiusLarge}"/>
+      <Setter Property="Padding" Value="20"/>
+      <Setter Property="BoxShadow" Value="0 2 8 0 #19000000"/>
+    </Style>
+
+    <Style Selector="Border.panel">
+      <Setter Property="Background" Value="{StaticResource SurfaceVariantBrush}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="{StaticResource RadiusMedium}"/>
+      <Setter Property="Padding" Value="16"/>
+    </Style>
+
+    <!-- TextBlock Styles -->
+    <Style Selector="TextBlock.h1">
+      <Setter Property="FontSize" Value="32"/>
+      <Setter Property="FontWeight" Value="Medium"/>
+      <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+    </Style>
+    <Style Selector="TextBlock.h2">
+      <Setter Property="FontSize" Value="24"/>
+      <Setter Property="FontWeight" Value="Medium"/>
+      <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+    </Style>
+    <Style Selector="TextBlock.h3">
+      <Setter Property="FontSize" Value="20"/>
+      <Setter Property="FontWeight" Value="Medium"/>
+      <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+    </Style>
+    <Style Selector="TextBlock.h4">
+      <Setter Property="FontSize" Value="18"/>
+      <Setter Property="FontWeight" Value="Medium"/>
+      <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+    </Style>
+    <Style Selector="TextBlock.body">
+      <Setter Property="FontSize" Value="14"/>
+      <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+    </Style>
+    <Style Selector="TextBlock.caption">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+    </Style>
+    <Style Selector="TextBlock.label">
+      <Setter Property="FontSize" Value="14"/>
+      <Setter Property="FontWeight" Value="Medium"/>
+      <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+    </Style>
+
+    <!-- ProgressBar Style -->
+    <Style Selector="ProgressBar">
+      <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+      <Setter Property="Background" Value="{StaticResource SurfaceVariantBrush}"/>
+      <Setter Property="Height" Value="8"/>
+      <Setter Property="CornerRadius" Value="4"/>
+    </Style>
+
+    <!-- CheckBox Style -->
+    <Style Selector="CheckBox">
+      <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+    </Style>
+
+  </Application.Styles>
 </Application>

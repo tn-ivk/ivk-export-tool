@@ -9,13 +9,14 @@
         Icon="/Assets/avalonia-logo.ico"
         Title="IVK Export Tool - MySQL Database Exporter"
         Width="900" Height="700"
-        MinWidth="800" MinHeight="600">
+        MinWidth="800" MinHeight="600"
+        Background="{DynamicResource SurfaceBrush}">
 
   <Design.DataContext>
     <vm:MainWindowViewModel/>
   </Design.DataContext>
 
-  <Grid Margin="20">
+  <Grid Margin="32">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="Auto"/>
@@ -25,12 +26,17 @@
     </Grid.RowDefinitions>
 
     <!-- Заголовок -->
-    <TextBlock Grid.Row="0" Text="MySQL Database Exporter" FontSize="24" FontWeight="Bold" Margin="0,0,0,20"/>
+    <TextBlock Grid.Row="0"
+               Text="MySQL Database Exporter"
+               Classes="h2"
+               Margin="0,0,0,24"/>
 
     <!-- Параметры подключения -->
-    <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" Padding="15" Margin="0,0,0,10">
+    <Border Grid.Row="1" Classes="card" Margin="0,0,0,16">
       <StackPanel>
-        <TextBlock Text="Параметры подключения" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+        <TextBlock Text="Параметры подключения"
+                   Classes="h4"
+                   Margin="0,0,0,16"/>
 
         <Grid>
           <Grid.ColumnDefinitions>
@@ -46,32 +52,73 @@
           </Grid.RowDefinitions>
 
           <!-- Host -->
-          <TextBlock Grid.Row="0" Grid.Column="0" Text="Host:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-          <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Host}" Watermark="localhost" Margin="0,0,20,10"/>
+          <TextBlock Grid.Row="0" Grid.Column="0"
+                     Text="Host:"
+                     Classes="label"
+                     VerticalAlignment="Center"
+                     Margin="0,0,12,0"/>
+          <TextBox Grid.Row="0" Grid.Column="1"
+                   Text="{Binding Host}"
+                   Watermark="localhost"
+                   Margin="0,0,24,12"/>
 
           <!-- Port -->
-          <TextBlock Grid.Row="0" Grid.Column="2" Text="Port:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-          <TextBox Grid.Row="0" Grid.Column="3" Text="{Binding Port}" Watermark="3306" Width="100" HorizontalAlignment="Left" Margin="0,0,0,10"/>
+          <TextBlock Grid.Row="0" Grid.Column="2"
+                     Text="Port:"
+                     Classes="label"
+                     VerticalAlignment="Center"
+                     Margin="0,0,12,0"/>
+          <TextBox Grid.Row="0" Grid.Column="3"
+                   Text="{Binding Port}"
+                   Watermark="3306"
+                   Width="120"
+                   HorizontalAlignment="Left"
+                   Margin="0,0,0,12"/>
 
           <!-- Username -->
-          <TextBlock Grid.Row="1" Grid.Column="0" Text="Username:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-          <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Username}" Watermark="root" Margin="0,0,20,10"/>
+          <TextBlock Grid.Row="1" Grid.Column="0"
+                     Text="Username:"
+                     Classes="label"
+                     VerticalAlignment="Center"
+                     Margin="0,0,12,0"/>
+          <TextBox Grid.Row="1" Grid.Column="1"
+                   Text="{Binding Username}"
+                   Watermark="root"
+                   Margin="0,0,24,12"/>
 
           <!-- Password -->
-          <TextBlock Grid.Row="1" Grid.Column="2" Text="Password:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-          <TextBox Grid.Row="1" Grid.Column="3" Text="{Binding Password}" PasswordChar="*" Watermark="password" Margin="0,0,0,10"/>
+          <TextBlock Grid.Row="1" Grid.Column="2"
+                     Text="Password:"
+                     Classes="label"
+                     VerticalAlignment="Center"
+                     Margin="0,0,12,0"/>
+          <TextBox Grid.Row="1" Grid.Column="3"
+                   Text="{Binding Password}"
+                   PasswordChar="*"
+                   Watermark="password"
+                   Margin="0,0,0,12"/>
 
           <!-- Кнопки -->
-          <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-            <Button Content="Тест подключения" Command="{Binding TestConnectionCommand}" IsEnabled="{Binding !IsLoading}" Margin="0,0,10,0" Padding="10,5"/>
-            <Button Content="Подключиться" Command="{Binding ConnectCommand}" IsEnabled="{Binding !IsLoading}" Padding="10,5"/>
+          <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4"
+                      Orientation="Horizontal"
+                      HorizontalAlignment="Right"
+                      Margin="0,16,0,0">
+            <Button Content="Тест подключения"
+                    Classes="secondary"
+                    Command="{Binding TestConnectionCommand}"
+                    IsEnabled="{Binding !IsLoading}"
+                    Margin="0,0,12,0"/>
+            <Button Content="Подключиться"
+                    Classes="primary"
+                    Command="{Binding ConnectCommand}"
+                    IsEnabled="{Binding !IsLoading}"/>
           </StackPanel>
         </Grid>
       </StackPanel>
     </Border>
 
     <!-- База данных и таблицы -->
-    <Border Grid.Row="2" BorderBrush="Gray" BorderThickness="1" Padding="15" Margin="0,0,0,10" IsEnabled="{Binding IsConnected}">
+    <Border Grid.Row="2" Classes="card" Margin="0,0,0,16" IsEnabled="{Binding IsConnected}">
       <Grid>
         <Grid.RowDefinitions>
           <RowDefinition Height="Auto"/>
@@ -80,22 +127,33 @@
         </Grid.RowDefinitions>
 
         <!-- Выбор базы данных -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-          <TextBlock Text="База данных:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,16">
+          <TextBlock Text="База данных:"
+                     Classes="label"
+                     VerticalAlignment="Center"
+                     Margin="0,0,12,0"/>
           <ComboBox ItemsSource="{Binding Databases}"
                     SelectedItem="{Binding SelectedDatabase}"
-                    Width="200"
-                    Margin="0,0,10,0"/>
-          <Button Content="Обновить таблицы" Command="{Binding RefreshTablesCommand}" Padding="10,5"/>
+                    MinWidth="220"
+                    Margin="0,0,12,0"/>
+          <Button Content="Обновить таблицы"
+                  Classes="outlined"
+                  Command="{Binding RefreshTablesCommand}"/>
         </StackPanel>
 
         <!-- Список таблиц -->
-        <Border Grid.Row="1" BorderBrush="LightGray" BorderThickness="1">
+        <Border Grid.Row="1"
+                Background="{DynamicResource BackgroundBrush}"
+                BorderBrush="{DynamicResource BorderLightBrush}"
+                BorderThickness="1"
+                CornerRadius="6">
           <ScrollViewer>
             <ItemsControl ItemsSource="{Binding Tables}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Border BorderBrush="LightGray" BorderThickness="0,0,0,1" Padding="10,5">
+                  <Border BorderBrush="{DynamicResource BorderLightBrush}"
+                          BorderThickness="0,0,0,1"
+                          Padding="16,12">
                     <Grid>
                       <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -104,10 +162,23 @@
                         <ColumnDefinition Width="Auto"/>
                       </Grid.ColumnDefinitions>
 
-                      <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" Margin="0,0,10,0"/>
-                      <TextBlock Grid.Column="1" Text="{Binding Name}" VerticalAlignment="Center" FontWeight="Bold"/>
-                      <TextBlock Grid.Column="2" Text="{Binding RowCount, StringFormat='Rows: {0}'}" VerticalAlignment="Center" Margin="10,0"/>
-                      <TextBlock Grid.Column="3" Text="{Binding Engine}" VerticalAlignment="Center" Foreground="Gray"/>
+                      <CheckBox Grid.Column="0"
+                                IsChecked="{Binding IsSelected}"
+                                Margin="0,0,16,0"/>
+                      <TextBlock Grid.Column="1"
+                                 Text="{Binding Name}"
+                                 Classes="body"
+                                 FontWeight="Medium"
+                                 VerticalAlignment="Center"/>
+                      <TextBlock Grid.Column="2"
+                                 Text="{Binding RowCount, StringFormat='Rows: {0}'}"
+                                 Classes="caption"
+                                 VerticalAlignment="Center"
+                                 Margin="16,0"/>
+                      <TextBlock Grid.Column="3"
+                                 Text="{Binding Engine}"
+                                 Classes="caption"
+                                 VerticalAlignment="Center"/>
                     </Grid>
                   </Border>
                 </DataTemplate>
@@ -117,19 +188,39 @@
         </Border>
 
         <!-- Кнопки управления таблицами -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-          <Button Content="Выбрать все" Command="{Binding SelectAllTablesCommand}" Margin="0,0,10,0" Padding="10,5"/>
-          <Button Content="Снять выбор" Command="{Binding DeselectAllTablesCommand}" Padding="10,5"/>
+        <StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,16,0,0">
+          <Button Content="Выбрать все"
+                  Classes="secondary"
+                  Command="{Binding SelectAllTablesCommand}"
+                  Margin="0,0,12,0"/>
+          <Button Content="Снять выбор"
+                  Classes="outlined"
+                  Command="{Binding DeselectAllTablesCommand}"/>
         </StackPanel>
       </Grid>
     </Border>
 
     <!-- Прогресс экспорта -->
-    <Border Grid.Row="3" BorderBrush="Gray" BorderThickness="1" Padding="15" Margin="0,0,0,10" IsVisible="{Binding IsExporting}">
+    <Border Grid.Row="3"
+            Classes="panel"
+            Margin="0,0,0,16"
+            IsVisible="{Binding IsExporting}">
       <StackPanel>
-        <TextBlock Text="Экспорт данных..." FontWeight="Bold" Margin="0,0,0,5"/>
-        <ProgressBar Value="{Binding ExportProgress}" Minimum="0" Maximum="100" Height="20"/>
-        <TextBlock Text="{Binding ExportProgress, StringFormat='Прогресс: {0}%'}" HorizontalAlignment="Center" Margin="0,5,0,0"/>
+        <TextBlock Text="Экспорт данных..."
+                   Classes="body"
+                   FontWeight="Medium"
+                   Margin="0,0,0,8"/>
+        <ProgressBar Value="{Binding ExportProgress}"
+                     Minimum="0"
+                     Maximum="100"
+                     Height="8"/>
+        <TextBlock Text="{Binding ExportProgress, StringFormat='Прогресс: {0}%'}"
+                   Classes="caption"
+                   HorizontalAlignment="Center"
+                   Margin="0,8,0,0"/>
       </StackPanel>
     </Border>
 
@@ -140,9 +231,19 @@
         <ColumnDefinition Width="Auto"/>
       </Grid.ColumnDefinitions>
 
-      <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" VerticalAlignment="Center" TextWrapping="Wrap"/>
-      <Button Grid.Column="1" Content="Экспортировать" Command="{Binding ExportCommand}"
-              IsEnabled="{Binding !IsExporting}" Padding="20,10" FontWeight="Bold"/>
+      <TextBlock Grid.Column="0"
+                 Text="{Binding StatusMessage}"
+                 Classes="body"
+                 VerticalAlignment="Center"
+                 TextWrapping="Wrap"/>
+      <Button Grid.Column="1"
+              Content="Экспортировать"
+              Classes="primary"
+              Command="{Binding ExportCommand}"
+              IsEnabled="{Binding !IsExporting}"
+              Padding="32,12"
+              FontWeight="Medium"
+              FontSize="16"/>
     </Grid>
 
   </Grid>
