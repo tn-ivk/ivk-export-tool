@@ -4,6 +4,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
 using Avalonia.Threading;
+using IvkExportTool.Desktop.Enums;
 using IvkExportTool.Desktop.ViewModels;
 
 namespace IvkExportTool.Desktop.Views;
@@ -66,16 +67,14 @@ public partial class ConnectionWindow : Window
                 message == "Введите параметры подключения")
                 return;
 
-            // Определяем тип уведомления
-            var notificationType = NotificationType.Information;
-            if (_viewModel.IsStatusSuccess)
+            // Определяем тип уведомления на основе StatusType
+            var notificationType = _viewModel.StatusType switch
             {
-                notificationType = NotificationType.Success;
-            }
-            else if (_viewModel.IsStatusError)
-            {
-                notificationType = NotificationType.Error;
-            }
+                StatusMessageType.Success => NotificationType.Success,
+                StatusMessageType.Warning => NotificationType.Warning,
+                StatusMessageType.Error => NotificationType.Error,
+                _ => NotificationType.Information
+            };
 
             // Показываем уведомление в UI потоке
             Dispatcher.UIThread.Post(() =>
@@ -87,15 +86,8 @@ public partial class ConnectionWindow : Window
                     expiration: TimeSpan.FromSeconds(5)
                 ));
 
-                // Сбрасываем флаги статуса после показа уведомления
-                if (_viewModel.IsStatusSuccess)
-                {
-                    _viewModel.IsStatusSuccess = false;
-                }
-                if (_viewModel.IsStatusError)
-                {
-                    _viewModel.IsStatusError = false;
-                }
+                // Сбрасываем статус после показа уведомления
+                _viewModel.StatusType = StatusMessageType.None;
             });
         }
     }
