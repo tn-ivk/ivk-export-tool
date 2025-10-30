@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using IvkExportTool.Core.Interfaces;
 using IvkExportTool.Core.Models;
+using IvkExportTool.Desktop.Enums;
 
 namespace IvkExportTool.Desktop.ViewModels;
 
@@ -37,10 +38,7 @@ public partial class ConnectionWindowViewModel : ViewModelBase
     private string _statusMessage = "Введите параметры подключения";
 
     [ObservableProperty]
-    private bool _isStatusSuccess;
-
-    [ObservableProperty]
-    private bool _isStatusError;
+    private StatusMessageType _statusType = StatusMessageType.None;
 
     // Событие успешного подключения
     public event EventHandler<ConnectionConfig>? ConnectionSucceeded;
@@ -151,8 +149,7 @@ public partial class ConnectionWindowViewModel : ViewModelBase
     {
         IsLoading = true;
         StatusMessage = "Тестирование подключения...";
-        IsStatusSuccess = false;
-        IsStatusError = false;
+        StatusType = StatusMessageType.None;
 
         try
         {
@@ -162,18 +159,18 @@ public partial class ConnectionWindowViewModel : ViewModelBase
             if (result)
             {
                 StatusMessage = "✓ Подключение успешно! Нажмите 'Подключиться' для продолжения.";
-                IsStatusSuccess = true;
+                StatusType = StatusMessageType.Success;
             }
             else
             {
                 StatusMessage = "✗ Ошибка подключения. Проверьте параметры.";
-                IsStatusError = true;
+                StatusType = StatusMessageType.Error;
             }
         }
         catch (Exception ex)
         {
             StatusMessage = $"✗ Ошибка: {ex.Message}";
-            IsStatusError = true;
+            StatusType = StatusMessageType.Error;
         }
         finally
         {
@@ -186,8 +183,7 @@ public partial class ConnectionWindowViewModel : ViewModelBase
     {
         IsLoading = true;
         StatusMessage = "Подключение к базе данных...";
-        IsStatusSuccess = false;
-        IsStatusError = false;
+        StatusType = StatusMessageType.None;
 
         try
         {
@@ -199,7 +195,7 @@ public partial class ConnectionWindowViewModel : ViewModelBase
             if (databases.Count > 0)
             {
                 StatusMessage = $"✓ Успешно! Найдено {databases.Count} баз данных.";
-                IsStatusSuccess = true;
+                StatusType = StatusMessageType.Success;
 
                 // Сохраняем настройки
                 await SaveSettingsInternalAsync();
@@ -210,13 +206,13 @@ public partial class ConnectionWindowViewModel : ViewModelBase
             else
             {
                 StatusMessage = "✗ Не найдено баз данных на сервере.";
-                IsStatusError = true;
+                StatusType = StatusMessageType.Warning;
             }
         }
         catch (Exception ex)
         {
             StatusMessage = $"✗ Ошибка подключения: {ex.Message}";
-            IsStatusError = true;
+            StatusType = StatusMessageType.Error;
         }
         finally
         {
