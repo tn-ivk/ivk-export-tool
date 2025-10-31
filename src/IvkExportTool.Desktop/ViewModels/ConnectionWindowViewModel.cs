@@ -148,8 +148,8 @@ public partial class ConnectionWindowViewModel : ViewModelBase
     private async Task TestConnectionAsync()
     {
         IsLoading = true;
-        StatusMessage = "Тестирование подключения...";
-        StatusType = StatusMessageType.None;
+        // StatusMessage = "Тестирование подключения...";
+        // StatusType = StatusMessageType.None;
 
         try
         {
@@ -182,8 +182,8 @@ public partial class ConnectionWindowViewModel : ViewModelBase
     private async Task ConnectAsync()
     {
         IsLoading = true;
-        StatusMessage = "Подключение к базе данных...";
-        StatusType = StatusMessageType.None;
+        // StatusMessage = "Подключение к базе данных...";
+        // StatusType = StatusMessageType.None;
 
         try
         {
