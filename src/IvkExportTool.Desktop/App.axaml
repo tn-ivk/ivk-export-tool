@@ -375,10 +375,8 @@
     </Style>
 
     <!-- Success уведомления (зелёный фон) -->
-    <Style Selector="NotificationCard /template/ Border#PART_HeaderBar">
+    <Style Selector="NotificationCard[NotificationType=Success]">
       <Setter Property="Background" Value="{StaticResource SuccessBackgroundBrush}"/>
-      <Setter Property="BorderBrush" Value="{StaticResource SuccessBrush}"/>
-      <Setter Property="BorderThickness" Value="0,0,0,2"/>
     </Style>
 
     <Style Selector="NotificationCard[NotificationType=Success] /template/ Border#PART_HeaderBar">
@@ -387,23 +385,19 @@
       <Setter Property="BorderThickness" Value="0,0,0,3"/>
     </Style>
 
-    <Style Selector="NotificationCard[NotificationType=Success]">
-      <Setter Property="Background" Value="{StaticResource SuccessBackgroundBrush}"/>
-    </Style>
-
     <Style Selector="NotificationCard[NotificationType=Success] TextBlock">
       <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
     </Style>
 
     <!-- Error уведомления (красный фон) -->
+    <Style Selector="NotificationCard[NotificationType=Error]">
+      <Setter Property="Background" Value="{StaticResource ErrorBackgroundBrush}"/>
+    </Style>
+
     <Style Selector="NotificationCard[NotificationType=Error] /template/ Border#PART_HeaderBar">
       <Setter Property="Background" Value="{StaticResource ErrorBackgroundBrush}"/>
       <Setter Property="BorderBrush" Value="{StaticResource ErrorBrush}"/>
       <Setter Property="BorderThickness" Value="0,0,0,3"/>
-    </Style>
-
-    <Style Selector="NotificationCard[NotificationType=Error]">
-      <Setter Property="Background" Value="{StaticResource ErrorBackgroundBrush}"/>
     </Style>
 
     <Style Selector="NotificationCard[NotificationType=Error] TextBlock">
@@ -411,14 +405,14 @@
     </Style>
 
     <!-- Warning уведомления (оранжевый фон) -->
+    <Style Selector="NotificationCard[NotificationType=Warning]">
+      <Setter Property="Background" Value="{StaticResource WarningBackgroundBrush}"/>
+    </Style>
+
     <Style Selector="NotificationCard[NotificationType=Warning] /template/ Border#PART_HeaderBar">
       <Setter Property="Background" Value="{StaticResource WarningBackgroundBrush}"/>
       <Setter Property="BorderBrush" Value="{StaticResource WarningBrush}"/>
       <Setter Property="BorderThickness" Value="0,0,0,3"/>
-    </Style>
-
-    <Style Selector="NotificationCard[NotificationType=Warning]">
-      <Setter Property="Background" Value="{StaticResource WarningBackgroundBrush}"/>
     </Style>
 
     <Style Selector="NotificationCard[NotificationType=Warning] TextBlock">
@@ -426,14 +420,14 @@
     </Style>
 
     <!-- Information уведомления (синий фон) -->
+    <Style Selector="NotificationCard[NotificationType=Information]">
+      <Setter Property="Background" Value="{StaticResource InfoBackgroundBrush}"/>
+    </Style>
+
     <Style Selector="NotificationCard[NotificationType=Information] /template/ Border#PART_HeaderBar">
       <Setter Property="Background" Value="{StaticResource InfoBackgroundBrush}"/>
       <Setter Property="BorderBrush" Value="{StaticResource InfoBrush}"/>
       <Setter Property="BorderThickness" Value="0,0,0,3"/>
-    </Style>
-
-    <Style Selector="NotificationCard[NotificationType=Information]">
-      <Setter Property="Background" Value="{StaticResource InfoBackgroundBrush}"/>
     </Style>
 
     <Style Selector="NotificationCard[NotificationType=Information] TextBlock">
