@@ -1,8 +1,8 @@
-using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
 using Avalonia.Threading;
 using IvkExportTool.Desktop.Enums;
+using IvkExportTool.Desktop.Events;
 using IvkExportTool.Desktop.ViewModels;
 
 namespace IvkExportTool.Desktop.Views;
@@ -39,55 +39,46 @@ public partial class ConnectionWindow : Window
         // Отписываемся от старой ViewModel
         if (_viewModel is not null)
         {
-            _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            _viewModel.NotificationRequested -= OnNotificationRequested;
         }
 
         // Подписываемся на новую ViewModel
         _viewModel = DataContext as ConnectionWindowViewModel;
         if (_viewModel is not null)
         {
-            _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+            _viewModel.NotificationRequested += OnNotificationRequested;
         }
     }
 
-    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    private void OnNotificationRequested(object? sender, NotificationRequestedEventArgs e)
     {
-        if (_viewModel is null || _notificationManager is null)
+        if (_notificationManager is null)
             return;
 
-        // Реагируем только на изменения StatusMessage
-        if (e.PropertyName == nameof(ConnectionWindowViewModel.StatusMessage))
+        // Игнорируем пустые или дефолтные сообщения
+        if (string.IsNullOrWhiteSpace(e.Message) ||
+            e.Message == "Введите параметры подключения")
+            return;
+
+        // Определяем тип уведомления на основе StatusType
+        var notificationType = e.Type switch
         {
-            var message = _viewModel.StatusMessage;
+            StatusMessageType.Success => NotificationType.Success,
+            StatusMessageType.Warning => NotificationType.Warning,
+            StatusMessageType.Error => NotificationType.Error,
+            _ => NotificationType.Information
+        };
 
-            // Игнорируем пустые или дефолтные сообщения
-            if (string.IsNullOrWhiteSpace(message) ||
-                message == "Введите параметры подключения")
-                return;
-
-            // Определяем тип уведомления на основе StatusType
-            var notificationType = _viewModel.StatusType switch
-            {
-                StatusMessageType.Success => NotificationType.Success,
-                StatusMessageType.Warning => NotificationType.Warning,
-                StatusMessageType.Error => NotificationType.Error,
-                _ => NotificationType.Information
-            };
-
-            // Показываем уведомление в UI потоке
-            Dispatcher.UIThread.Post(() =>
-            {
-                _notificationManager.Show(new Notification(
-                    title: "IvkExportTool",
-                    message: message,
-                    type: notificationType,
-                    expiration: TimeSpan.FromSeconds(5)
-                ));
-
-                // Сбрасываем статус после показа уведомления
-                _viewModel.StatusType = StatusMessageType.None;
-            });
-        }
+        // Показываем уведомление в UI потоке
+        Dispatcher.UIThread.Post(() =>
+        {
+            _notificationManager.Show(new Notification(
+                title: "IvkExportTool",
+                message: e.Message,
+                type: notificationType,
+                expiration: TimeSpan.FromSeconds(5)
+            ));
+        });
     }
 
     protected override void OnClosed(EventArgs e)
@@ -95,7 +86,7 @@ public partial class ConnectionWindow : Window
         // Отписываемся при закрытии окна
         if (_viewModel is not null)
         {
-            _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            _viewModel.NotificationRequested -= OnNotificationRequested;
         }
 
         Opened -= OnWindowOpened;

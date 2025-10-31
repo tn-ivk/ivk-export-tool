@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using IvkExportTool.Core.Interfaces;
 using IvkExportTool.Core.Models;
 using IvkExportTool.Desktop.Enums;
+using IvkExportTool.Desktop.Events;
 
 namespace IvkExportTool.Desktop.ViewModels;
 
@@ -40,8 +41,9 @@ public partial class ConnectionWindowViewModel : ViewModelBase
     [ObservableProperty]
     private StatusMessageType _statusType = StatusMessageType.None;
 
-    // Событие успешного подключения
+    // События
     public event EventHandler<ConnectionConfig>? ConnectionSucceeded;
+    public event EventHandler<NotificationRequestedEventArgs>? NotificationRequested;
 
     public ConnectionWindowViewModel() : this(null!, null!)
     {
@@ -144,12 +146,23 @@ public partial class ConnectionWindowViewModel : ViewModelBase
 
     #endregion
 
+    #region Notification
+
+    private void ShowNotification(string message, StatusMessageType type)
+    {
+        StatusMessage = message;
+        StatusType = type;
+
+        // Вызываем событие для показа уведомления
+        NotificationRequested?.Invoke(this, new NotificationRequestedEventArgs(message, type));
+    }
+
+    #endregion
+
     [RelayCommand]
     private async Task TestConnectionAsync()
     {
         IsLoading = true;
-        // StatusMessage = "Тестирование подключения...";
-        // StatusType = StatusMessageType.None;
 
         try
         {
@@ -158,19 +171,22 @@ public partial class ConnectionWindowViewModel : ViewModelBase
 
             if (result)
             {
-                StatusMessage = "✓ Подключение успешно! Нажмите 'Подключиться' для продолжения.";
-                StatusType = StatusMessageType.Success;
+                ShowNotification(
+                    "✓ Подключение успешно! Нажмите 'Подключиться' для продолжения.",
+                    StatusMessageType.Success);
             }
             else
             {
-                StatusMessage = "✗ Ошибка подключения. Проверьте параметры.";
-                StatusType = StatusMessageType.Error;
+                ShowNotification(
+                    "✗ Ошибка подключения. Проверьте параметры.",
+                    StatusMessageType.Error);
             }
         }
         catch (Exception ex)
         {
-            StatusMessage = $"✗ Ошибка: {ex.Message}";
-            StatusType = StatusMessageType.Error;
+            ShowNotification(
+                $"✗ Ошибка: {ex.Message}",
+                StatusMessageType.Error);
         }
         finally
         {
@@ -182,8 +198,6 @@ public partial class ConnectionWindowViewModel : ViewModelBase
     private async Task ConnectAsync()
     {
         IsLoading = true;
-        // StatusMessage = "Подключение к базе данных...";
-        // StatusType = StatusMessageType.None;
 
         try
         {
@@ -194,8 +208,9 @@ public partial class ConnectionWindowViewModel : ViewModelBase
 
             if (databases.Count > 0)
             {
-                StatusMessage = $"✓ Успешно! Найдено {databases.Count} баз данных.";
-                StatusType = StatusMessageType.Success;
+                ShowNotification(
+                    $"✓ Успешно! Найдено {databases.Count} баз данных.",
+                    StatusMessageType.Success);
 
                 // Сохраняем настройки
                 await SaveSettingsInternalAsync();
@@ -205,14 +220,16 @@ public partial class ConnectionWindowViewModel : ViewModelBase
             }
             else
             {
-                StatusMessage = "✗ Не найдено баз данных на сервере.";
-                StatusType = StatusMessageType.Warning;
+                ShowNotification(
+                    "✗ Не найдено баз данных на сервере.",
+                    StatusMessageType.Warning);
             }
         }
         catch (Exception ex)
         {
-            StatusMessage = $"✗ Ошибка подключения: {ex.Message}";
-            StatusType = StatusMessageType.Error;
+            ShowNotification(
+                $"✗ Ошибка подключения: {ex.Message}",
+                StatusMessageType.Error);
         }
         finally
         {
