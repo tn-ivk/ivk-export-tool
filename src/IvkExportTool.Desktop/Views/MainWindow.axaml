@@ -26,6 +26,26 @@
       <RowDefinition Height="Auto"/>
     </Grid.RowDefinitions>
 
+    <!-- Overlay для индикатора загрузки -->
+    <Border Grid.Row="0" Grid.RowSpan="3"
+            Background="#80000000"
+            IsVisible="{Binding IsLoading}"
+            ZIndex="999">
+      <StackPanel HorizontalAlignment="Center"
+                  VerticalAlignment="Center"
+                  Spacing="16">
+        <ProgressBar IsIndeterminate="True"
+                     Width="200"
+                     Height="4"
+                     Foreground="{StaticResource PrimaryBrush}"/>
+        <TextBlock Text="{Binding StatusMessage}"
+                   Foreground="White"
+                   FontSize="14"
+                   FontWeight="Medium"
+                   HorizontalAlignment="Center"/>
+      </StackPanel>
+    </Border>
+
     <!-- ========== 1. CONNECTION STATUS BAR ========== -->
     <!-- Компактная панель состояния подключения (40px) -->
     <Border Grid.Row="0"
@@ -231,10 +251,20 @@
     <!-- ========== 3. STATUS BAR ========== -->
     <!-- Нижняя панель со статистикой и кнопкой экспорта -->
     <Border Grid.Row="2" Classes="status-bar">
-      <Grid ColumnDefinitions="*,Auto">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+
+        <!-- Сообщение о статусе -->
+        <TextBlock Grid.Column="0"
+                   Text="{Binding StatusMessage}"
+                   Foreground="{StaticResource OnSurfaceVariantBrush}"
+                   FontSize="13"
+                   VerticalAlignment="Center"
+                   Margin="0,0,16,0"
+                   TextTrimming="CharacterEllipsis"
+                   MaxWidth="300"/>
 
         <!-- Статистика -->
-        <StackPanel Grid.Column="0"
+        <StackPanel Grid.Column="1"
                     Orientation="Horizontal"
                     Spacing="16">
 
@@ -282,7 +312,7 @@
         </StackPanel>
 
         <!-- Кнопка экспорта -->
-        <Button Grid.Column="1"
+        <Button Grid.Column="2"
                 Classes="accent export-button"
                 Command="{Binding ExportCommand}"
                 IsEnabled="{Binding HasSelectedTables}">

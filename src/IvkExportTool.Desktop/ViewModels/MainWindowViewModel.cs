@@ -121,9 +121,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
             if (Databases.Count > 0)
             {
-                // Устанавливаем первую БД, что автоматически вызовет OnSelectedDatabaseChanged
-                // и загрузит таблицы через RefreshTablesAsync (который сам управляет IsLoading)
+                // Устанавливаем первую БД, что вызовет OnSelectedDatabaseChanged
+                // и загрузит таблицы через RefreshTablesAsync
                 SelectedDatabase = Databases[0];
+                // RefreshTablesAsync управляет IsLoading самостоятельно
             }
             else
             {
