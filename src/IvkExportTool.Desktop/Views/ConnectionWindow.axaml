@@ -6,10 +6,10 @@
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
         x:Class="IvkExportTool.Desktop.Views.ConnectionWindow"
         x:DataType="vm:ConnectionWindowViewModel"
-        Icon="/Assets/avalonia-logo.ico"
+        Icon="/Assets/Transneft.ico"
         Title="IvkExportTool - Подключение к БД ИВК"
-        Width="500" Height="400"
-        MinWidth="500" MinHeight="400"
+        Width="500" Height="360"
+        MinWidth="500" MinHeight="360"
         WindowStartupLocation="CenterScreen"
         CanResize="True"
         Background="{DynamicResource SurfaceBrush}">
