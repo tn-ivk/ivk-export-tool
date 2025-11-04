@@ -221,7 +221,8 @@
           <!-- Размер -->
           <DataGridTextColumn Header="Размер"
                               Binding="{Binding SizeFormatted}"
-                              Width="100"
+                              Width="140"
+                              MinWidth="120"
                               FontFamily="Consolas"
                               FontSize="13"/>
         </DataGrid.Columns>
