@@ -218,30 +218,11 @@
                               FontFamily="Consolas"
                               FontSize="13"/>
 
-          <!-- Количество строк -->
-          <DataGridTextColumn Header="Строки"
-                              Binding="{Binding RowCount, StringFormat='{}{0:N0}'}"
-                              Width="120"
-                              FontFamily="Consolas"
-                              FontSize="13"/>
-
           <!-- Размер -->
           <DataGridTextColumn Header="Размер"
                               Binding="{Binding SizeFormatted}"
                               Width="100"
                               FontFamily="Consolas"
-                              FontSize="13"/>
-
-          <!-- Engine -->
-          <DataGridTextColumn Header="Engine"
-                              Binding="{Binding Engine}"
-                              Width="80"
-                              FontSize="13"/>
-
-          <!-- Последнее обновление -->
-          <DataGridTextColumn Header="Обновлено"
-                              Binding="{Binding LastUpdateFormatted}"
-                              Width="150"
                               FontSize="13"/>
         </DataGrid.Columns>
       </DataGrid>

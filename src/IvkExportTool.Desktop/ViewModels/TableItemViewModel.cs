@@ -1,4 +1,3 @@
-using System;
 using CommunityToolkit.Mvvm.ComponentModel;
 using IvkExportTool.Core.Models;
 
@@ -32,41 +31,6 @@ public partial class TableItemViewModel : ObservableObject
     /// Форматированный размер таблицы (B, KB, MB, GB)
     /// </summary>
     public string SizeFormatted => FormatBytes(SizeInBytes);
-
-    /// <summary>
-    /// Форматированное время последнего обновления (заглушка, т.к. в TableInfo нет этого поля)
-    /// </summary>
-    public string LastUpdateFormatted => "–";
-
-    /// <summary>
-    /// CSS класс для цветового кодирования количества строк
-    /// </summary>
-    public string RowCountClass => RowCount switch
-    {
-        > 100000 => "large-table",
-        > 10000 => "medium-table",
-        _ => "small-table"
-    };
-
-    /// <summary>
-    /// CSS класс для цветового кодирования размера
-    /// </summary>
-    public string SizeClass => SizeInBytes switch
-    {
-        > 100_000_000 => "large-size",
-        > 10_000_000 => "medium-size",
-        _ => "small-size"
-    };
-
-    /// <summary>
-    /// Иконка в зависимости от типа engine
-    /// </summary>
-    public string TableIconKey => Engine?.ToUpperInvariant() switch
-    {
-        "INNODB" => "InnoDBIcon",
-        "MYISAM" => "MyISAMIcon",
-        _ => "GenericTableIcon"
-    };
 
     /// <summary>
     /// Синхронизация с исходной моделью TableInfo
