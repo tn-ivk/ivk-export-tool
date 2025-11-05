@@ -175,6 +175,7 @@
 
       <!-- DataGrid со списком таблиц -->
       <DataGrid Grid.Row="1"
+                x:Name="TablesGrid"
                 ItemsSource="{Binding FilteredTables}"
                 CanUserResizeColumns="True"
                 CanUserSortColumns="True"
@@ -190,10 +191,11 @@
           <DataGridTemplateColumn Width="50" CanUserResize="False">
             <DataGridTemplateColumn.Header>
               <CheckBox IsThreeState="True"
-                        IsChecked="{Binding $parent[Window].DataContext.TablesSelectionState, Mode=OneWay}"
-                        Command="{Binding $parent[Window].DataContext.ToggleAllTablesSelectionCommand}"
+                        Width="18"
+                        Height="18"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
+                        IsChecked="{Binding DataContext.TablesSelectionState, ElementName=TablesGrid, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                         ToolTip.Tip="Выбрать / Снять выбор со всех таблиц"/>
             </DataGridTemplateColumn.Header>
             <DataGridTemplateColumn.CellTemplate>

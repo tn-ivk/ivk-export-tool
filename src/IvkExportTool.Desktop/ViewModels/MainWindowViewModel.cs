@@ -177,6 +177,20 @@ public partial class MainWindowViewModel : ViewModelBase
         ApplyFilters();
     }
 
+    // Реакция на клик по чекбоксу в заголовке первой колонки
+    partial void OnTablesSelectionStateChanged(bool? value)
+    {
+        if (value == true)
+        {
+            SelectAllTables();
+        }
+        else if (value == false)
+        {
+            DeselectAllTables();
+        }
+        // null — частичный выбор, ничего не делаем
+    }
+
     private void ApplyFilters()
     {
         var filtered = AllTables.AsEnumerable();
