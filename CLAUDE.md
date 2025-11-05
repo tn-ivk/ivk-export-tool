@@ -8,11 +8,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Технологический стек
 
-- **.NET 9.0**
-- **Avalonia UI 11.3.6** - кроссплатформенный GUI фреймворк
+- **.NET 9.0** (SDK 9.0.111)
+- **Avalonia UI 11.3.8** - кроссплатформенный GUI фреймворк
 - **MySqlConnector 2.4.0** - подключение к MySQL базам данных
 - **CommunityToolkit.Mvvm 8.2.1** - MVVM паттерн
 - **NUnit 4.2.2** - тестирование
+- **FluentAssertions 8.8.0** - assertion библиотека для тестов
+- **Moq 4.20.72** - мокирование зависимостей в тестах
 
 ## Архитектура проекта
 
@@ -43,20 +45,40 @@ IvkExportTool/
 - `Desktop` → `Core` + `Infrastructure` (использует оба)
 - `Tests` → все проекты
 
+### Ключевые интерфейсы и модели
+
+#### Core Layer (src/IvkExportTool.Core/)
+
+**Интерфейсы** (в `Interfaces/`):
+- `IDatabaseService` - работа с базами данных (подключение, получение списка БД и таблиц)
+- `IExportService` - экспорт таблиц в различные форматы
+- `IAppSettingsService` - сохранение/загрузка настроек приложения
+
+**Модели** (в `Models/`):
+- `ConnectionConfig` - конфигурация подключения к БД (хост, порт, логин, пароль, БД)
+- `DatabaseInfo` - информация о базе данных
+- `TableInfo` - информация о таблице (имя, количество строк, размер, тип движка)
+- `ExportOptions` - параметры экспорта (список таблиц, формат, путь)
+- `ExportResult` - результат экспорта (успех, путь к файлу, ошибки)
+
 ### Dependency Injection
 
-Приложение использует Microsoft.Extensions.DependencyInjection для управления зависимостями. Конфигурация происходит в `App.axaml.cs`:
+Приложение использует Microsoft.Extensions.DependencyInjection для управления зависимостями. Конфигурация происходит в `App.axaml.cs` (см. `src/IvkExportTool.Desktop/App.axaml.cs:31-45`):
 
 ```csharp
 // Регистрация сервисов
+services.AddSingleton<IAppSettingsService, AppSettingsService>();
 services.AddSingleton<IDatabaseService, MySqlDatabaseService>();
 services.AddSingleton<IExportService, SqlExportService>();
 
 // Регистрация ViewModels
+services.AddTransient<ConnectionWindowViewModel>();
 services.AddTransient<MainWindowViewModel>();
 ```
 
 ViewModels получают зависимости через конструктор. Сервисы регистрируются как Singleton, ViewModels как Transient.
+
+**Важная архитектурная особенность**: Приложение имеет два окна (ConnectionWindow и MainWindow), которые переключаются друг на друга с сохранением позиции на том же мониторе. При смене подключения главное окно закрывается и открывается окно подключения. Логика переключения окон реализована в `App.axaml.cs`.
 
 ### Конфигурационные файлы
 
@@ -73,7 +95,10 @@ ViewModels получают зависимости через конструкт
 # Восстановление зависимостей
 dotnet restore
 
-# Сборка проекта
+# Сборка проекта (Debug)
+dotnet build
+
+# Сборка проекта (Release)
 dotnet build --configuration Release
 
 # Запуск тестов
@@ -88,6 +113,10 @@ dotnet run --project src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj
 ```bash
 # Запуск с автоматической перезагрузкой при изменении файлов
 dotnet watch run --project src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj
+
+# Запуск в Debug режиме (с Avalonia DevTools)
+dotnet run --project src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj --configuration Debug
+# В Debug режиме доступна отладка через F12 (Avalonia.Diagnostics)
 ```
 
 ### Форматирование и качество кода
@@ -112,8 +141,14 @@ dotnet test
 # Запустить тесты с подробным выводом
 dotnet test --verbosity detailed
 
-# Запустить конкретный тест
+# Запустить конкретный тест по имени
 dotnet test --filter "FullyQualifiedName~TestName"
+
+# Запустить тесты из конкретного класса
+dotnet test --filter "FullyQualifiedName~IvkExportTool.Tests.Services.MySqlDatabaseServiceTests"
+
+# Запустить тесты с конкретным именем метода
+dotnet test --filter "Name=TestConnectionAsync_ValidCredentials_ReturnsSuccess"
 
 # Тесты с покрытием кода
 dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
@@ -172,11 +207,25 @@ dotnet publish src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj \
 
 ### Avalonia UI специфика
 
-- AXAML файлы используют отступ 2 пробела
+- AXAML файлы используют отступ 2 пробела (определено в `.editorconfig`)
 - ViewModels наследуются от `ObservableObject` (CommunityToolkit.Mvvm) или `ViewModelBase`
 - Используется CommunityToolkit.Mvvm для MVVM паттерна
 - Команды реализуются через `RelayCommand` и `AsyncRelayCommand`
-- Включен `AvaloniaUseCompiledBindingsByDefault` для лучшей производительности
+- Включен `AvaloniaUseCompiledBindingsByDefault` для лучшей производительности (см. `.csproj`)
+
+### Дизайн-система
+
+Проект использует собственную дизайн-систему на основе Material Design 3 с сине-серой приглушённой палитрой. Полное описание в файле `design.md`:
+
+- **Primary цвет**: `#546e7a` (84, 110, 122) - основные интерактивные элементы
+- **Secondary цвет**: `#78909c` (120, 144, 156) - вторичные элементы
+- **Тональная палитра**: 20-95 уровней для создания визуальной иерархии
+- **Функциональные цвета**: Success `#4caf50`, Error `#f44336`, Warning `#ff9800`, Info `#2196f3`
+- **Шрифт**: Roboto / Inter (для Avalonia)
+- **Border Radius**: 6-8px для кнопок и полей, 12px для модальных окон
+- **Spacing**: 8px grid система (4px, 8px, 16px, 24px, 32px, 48px, 64px)
+
+При создании новых UI элементов обязательно следовать дизайн-системе из `design.md`.
 
 ## CI/CD
 
@@ -202,9 +251,11 @@ git push origin v1.0.0
 - `MySqlConnector` 2.4.0 - подключение к MySQL
 
 ### Desktop проект
-- `Avalonia` 11.3.6 - UI фреймворк
-- `Avalonia.Desktop` 11.3.6 - поддержка десктопных платформ
-- `Avalonia.Themes.Fluent` 11.3.6 - Fluent дизайн тема
+- `Avalonia` 11.3.8 - UI фреймворк
+- `Avalonia.Desktop` 11.3.8 - поддержка десктопных платформ
+- `Avalonia.Themes.Fluent` 11.3.8 - Fluent дизайн тема
+- `Avalonia.Controls.DataGrid` 11.3.8 - таблица данных
+- `Avalonia.Fonts.Inter` 11.3.8 - шрифт Inter
 - `CommunityToolkit.Mvvm` 8.2.1 - MVVM паттерн
 - `Microsoft.Extensions.DependencyInjection` 9.0.10 - DI контейнер
 - `Microsoft.Extensions.Configuration.Json` 9.0.10 - конфигурация
