@@ -197,19 +197,6 @@
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
 
-          <!-- Иконка типа таблицы -->
-          <DataGridTemplateColumn Width="40" CanUserResize="False">
-            <DataGridTemplateColumn.CellTemplate>
-              <DataTemplate>
-                <PathIcon Data="{DynamicResource GenericTableIcon}"
-                          Width="16" Height="16"
-                          Foreground="{StaticResource SecondaryBrush}"
-                          HorizontalAlignment="Center"
-                          VerticalAlignment="Center"/>
-              </DataTemplate>
-            </DataGridTemplateColumn.CellTemplate>
-          </DataGridTemplateColumn>
-
           <!-- Название таблицы -->
           <DataGridTextColumn Header="Таблица"
                               Binding="{Binding Name}"
