@@ -190,8 +190,8 @@
           <DataGridTemplateColumn Width="50" CanUserResize="False">
             <DataGridTemplateColumn.Header>
               <CheckBox IsThreeState="True"
-                        IsChecked="{Binding TablesSelectionState, Mode=OneWay}"
-                        Command="{Binding ToggleAllTablesSelectionCommand}"
+                        IsChecked="{Binding $parent[Window].DataContext.TablesSelectionState, Mode=OneWay}"
+                        Command="{Binding $parent[Window].DataContext.ToggleAllTablesSelectionCommand}"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         ToolTip.Tip="Выбрать / Снять выбор со всех таблиц"/>
