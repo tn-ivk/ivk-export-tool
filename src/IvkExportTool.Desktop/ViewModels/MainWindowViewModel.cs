@@ -401,20 +401,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand]
-    private void ToggleAllTablesSelection()
-    {
-        // Если все выбраны или частично выбраны, то снимаем выбор
-        // Если ничего не выбрано, то выбираем все
-        if (TablesSelectionState == true || TablesSelectionState == null)
-        {
-            DeselectAllTables();
-        }
-        else
-        {
-            SelectAllTables();
-        }
-    }
+    // Команда ToggleAllTablesSelection больше не используется (заменена биндингом на TablesSelectionState)
 
     [RelayCommand]
     private void FilterBySize(long minSizeMB)
