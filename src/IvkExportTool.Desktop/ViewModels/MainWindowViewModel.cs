@@ -43,6 +43,10 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private int _activeFiltersCount;
 
+    // Состояние чекбокса в заголовке (тристейтный)
+    [ObservableProperty]
+    private bool? _tablesSelectionState = false;
+
     // Экспорт
     [ObservableProperty]
     private int _exportProgress;
@@ -229,6 +233,24 @@ public partial class MainWindowViewModel : ViewModelBase
         TotalRows = selected.Sum(t => t.RowCount);
         TotalSize = FormatBytes(selected.Sum(t => t.SizeInBytes));
 
+        // Обновляем состояние чекбокса в заголовке
+        if (FilteredTables.Count == 0)
+        {
+            TablesSelectionState = false;
+        }
+        else if (SelectedCount == 0)
+        {
+            TablesSelectionState = false;
+        }
+        else if (SelectedCount == FilteredTables.Count)
+        {
+            TablesSelectionState = true;
+        }
+        else
+        {
+            TablesSelectionState = null; // Частичный выбор
+        }
+
         OnPropertyChanged(nameof(HasSelectedTables));
     }
 
@@ -362,6 +384,21 @@ public partial class MainWindowViewModel : ViewModelBase
         foreach (var table in FilteredTables)
         {
             table.IsSelected = false;
+        }
+    }
+
+    [RelayCommand]
+    private void ToggleAllTablesSelection()
+    {
+        // Если все выбраны или частично выбраны, то снимаем выбор
+        // Если ничего не выбрано, то выбираем все
+        if (TablesSelectionState == true || TablesSelectionState == null)
+        {
+            DeselectAllTables();
+        }
+        else
+        {
+            SelectAllTables();
         }
     }
 
