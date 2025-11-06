@@ -80,6 +80,38 @@ ViewModels получают зависимости через конструкт
 
 **Важная архитектурная особенность**: Приложение имеет два окна (ConnectionWindow и MainWindow), которые переключаются друг на друга с сохранением позиции на том же мониторе. При смене подключения главное окно закрывается и открывается окно подключения. Логика переключения окон реализована в `App.axaml.cs`.
 
+**Коммуникация между ViewModels**:
+- `ConnectionWindowViewModel.ConnectionSucceeded` - событие успешного подключения к БД (передаёт ConnectionConfig)
+- `MainWindowViewModel.ChangeConnectionRequested` - событие запроса смены подключения
+- `SaveWindowPosition()` и `RestoreWindowPositionOnSameScreen()` в `App.axaml.cs:177-214` обеспечивают сохранение позиции окна при переключении между окнами на том же мониторе
+
+### UI Модели и паттерны
+
+#### TableItemViewModel
+
+`TableItemViewModel` (см. `src/IvkExportTool.Desktop/ViewModels/TableItemViewModel.cs`) - обёртка вокруг `TableInfo` для UI-специфичной логики:
+
+- **Форматирование данных**: `SizeFormatted` преобразует байты в читаемый формат (B, KB, MB, GB)
+- **Двусторонняя синхронизация**: изменение `IsSelected` автоматически обновляет исходную модель `TableInfo` через `OnIsSelectedChanged`
+- **Доступ к исходной модели**: метод `GetTableInfo()` возвращает оригинальный `TableInfo` для экспорта
+- **Свойства только для чтения**: `Name`, `RowCount`, `SizeInBytes`, `Engine` проксируются из `TableInfo`
+
+Паттерн: UI ViewModel обёртывает бизнес-модель для добавления UI-специфичной функциональности без загрязнения Core слоя.
+
+#### Тристейтный чекбокс в заголовке таблицы
+
+Реализован в `MainWindowViewModel.TablesSelectionState` (тип `bool?`):
+- `null` - частичный выбор (выбраны не все таблицы)
+- `true` - все таблицы выбраны
+- `false` - ни одна таблица не выбрана
+
+Команды для управления выбором:
+- `ToggleAllTablesSelectionCommand` - переключение состояния чекбокса (из заголовка)
+- `SelectAllCommand` - выбор всех отфильтрованных таблиц
+- `DeselectAllCommand` - снятие выбора со всех таблиц
+
+Автоматическое обновление: при изменении `IsSelected` у любой `TableItemViewModel` вызывается `UpdateSelectionState()`, который пересчитывает состояние чекбокса в заголовке.
+
 ### Конфигурационные файлы
 
 - **`Directory.Build.props`** - общие настройки для всех проектов (LangVersion, Nullable, метаданные)
