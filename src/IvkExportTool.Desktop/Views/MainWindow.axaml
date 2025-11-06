@@ -202,10 +202,9 @@
           <!-- Чекбокс для выбора -->
           <DataGridTemplateColumn Width="50" CanUserResize="False">
             <DataGridTemplateColumn.Header>
-              <Border Padding="0" Margin="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+              <Border HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                 <CheckBox IsThreeState="True"
                           Width="20" Height="20"
-                          Margin="0,0,0,0"
                           VerticalAlignment="Center"
                           IsChecked="{Binding DataContext.TablesSelectionState, ElementName=TablesGrid, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                           ToolTip.Tip="Выбрать / Снять выбор со всех таблиц"/>
