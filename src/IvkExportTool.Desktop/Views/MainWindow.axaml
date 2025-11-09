@@ -206,7 +206,8 @@
                 <CheckBox IsThreeState="True"
                           Width="20" Height="20"
                           VerticalAlignment="Center"
-                          IsChecked="{Binding DataContext.TablesSelectionState, ElementName=TablesGrid, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          IsChecked="{Binding DataContext.TablesSelectionState, ElementName=TablesGrid, Mode=OneWay}"
+                          Command="{Binding DataContext.ToggleAllTablesSelectionCommand, ElementName=TablesGrid}"
                           ToolTip.Tip="Выбрать / Снять выбор со всех таблиц"/>
               </Border>
             </DataGridTemplateColumn.Header>

@@ -177,19 +177,6 @@ public partial class MainWindowViewModel : ViewModelBase
         ApplyFilters();
     }
 
-    // Реакция на клик по чекбоксу в заголовке первой колонки
-    partial void OnTablesSelectionStateChanged(bool? value)
-    {
-        if (value == true)
-        {
-            SelectAllTables();
-        }
-        else if (value == false)
-        {
-            DeselectAllTables();
-        }
-        // null — частичный выбор, ничего не делаем
-    }
 
     private void ApplyFilters()
     {
@@ -401,7 +388,20 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
-    // Команда ToggleAllTablesSelection больше не используется (заменена биндингом на TablesSelectionState)
+    [RelayCommand]
+    private void ToggleAllTablesSelection()
+    {
+        // Если все таблицы выбраны - снять выбор со всех
+        if (TablesSelectionState == true)
+        {
+            DeselectAllTables();
+        }
+        // Если выбраны не все или не выбрано ни одной - выбрать все
+        else
+        {
+            SelectAllTables();
+        }
+    }
 
     [RelayCommand]
     private void FilterBySize(long minSizeMB)
