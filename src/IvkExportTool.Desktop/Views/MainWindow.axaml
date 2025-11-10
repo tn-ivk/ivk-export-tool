@@ -180,13 +180,20 @@
                               FontSize="13"/>
 
           <!-- Размер -->
-          <DataGridTextColumn Header="Размер"
-                              Binding="{Binding SizeFormatted}"
-                              SortMemberPath="SizeInBytes"
-                              Width="140"
-                              MinWidth="120"
-                              FontFamily="Consolas"
-                              FontSize="13"/>
+          <DataGridTemplateColumn Header="Размер"
+                                  SortMemberPath="SizeInBytes"
+                                  Width="140"
+                                  MinWidth="120">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding SizeFormatted}"
+                          FontFamily="Consolas"
+                          FontSize="13"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"/>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
         </DataGrid.Columns>
       </DataGrid>
 
