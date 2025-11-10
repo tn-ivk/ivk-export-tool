@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*.*.*'
+    branches:
+      - main
   workflow_dispatch:
 
 env:
@@ -49,6 +51,16 @@ jobs:
           /p:DebugType=None \
           /p:DebugSymbols=false \
           --output ./publish/${{ matrix.runtime }}
+
+    - name: Copy appsettings template (Linux)
+      if: matrix.runtime == 'linux-x64'
+      run: |
+        cp src/IvkExportTool.Desktop/appsettings.template.json ./publish/${{ matrix.runtime }}/appsettings.json
+
+    - name: Copy appsettings template (Windows)
+      if: matrix.runtime == 'win-x64'
+      run: |
+        Copy-Item src/IvkExportTool.Desktop/appsettings.template.json ./publish/${{ matrix.runtime }}/appsettings.json
 
     - name: Create archive (Linux)
       if: matrix.archive-format == 'tar.gz'
