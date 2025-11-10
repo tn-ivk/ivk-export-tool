@@ -26,7 +26,7 @@ public class SqlExportService : IExportService
             await connection.OpenAsync(cancellationToken);
 
             await using var fileStream = new FileStream(options.OutputPath, FileMode.Create, FileAccess.Write);
-            await using var writer = new StreamWriter(fileStream, Encoding.UTF8);
+            await using var writer = new StreamWriter(fileStream, Encoding.UTF8, bufferSize: 64 * 1024); // 64KB буфер для оптимизации I/O
 
             // Заголовок SQL файла
             await writer.WriteLineAsync("-- MySQL Database Export");
@@ -124,6 +124,7 @@ public class SqlExportService : IExportService
         CancellationToken cancellationToken)
     {
         await using var selectCommand = new MySqlCommand($"SELECT * FROM `{tableName}`", connection);
+        selectCommand.CommandTimeout = 3600; // 1 час для больших таблиц
         await using var reader = await selectCommand.ExecuteReaderAsync(cancellationToken);
 
         if (!reader.HasRows)
@@ -138,42 +139,65 @@ public class SqlExportService : IExportService
 
         var insertHeader = $"INSERT INTO `{tableName}` ({string.Join(", ", columnNames.Select(c => $"`{c}`"))}) VALUES";
         var rowCount = 0;
-        var batchRows = new List<string>();
+        var currentBatchRow = 0;
 
         while (await reader.ReadAsync(cancellationToken))
         {
-            var values = new List<string>();
+            // Начало нового INSERT батча
+            if (currentBatchRow == 0)
+            {
+                if (rowCount > 0)
+                {
+                    await writer.WriteLineAsync(";");  // завершаем предыдущий INSERT
+                    await writer.WriteLineAsync();
+                }
+
+                await writer.WriteAsync(insertHeader);
+                await writer.WriteLineAsync();
+            }
+
+            // Запись строки напрямую в writer без промежуточного List
+            if (currentBatchRow > 0)
+            {
+                await writer.WriteLineAsync(",");
+            }
+
+            await writer.WriteAsync("(");
 
             for (int i = 0; i < columnCount; i++)
             {
+                if (i > 0)
+                {
+                    await writer.WriteAsync(", ");
+                }
+
                 if (reader.IsDBNull(i))
                 {
-                    values.Add("NULL");
+                    await writer.WriteAsync("NULL");
                 }
                 else
                 {
                     var value = reader.GetValue(i);
                     var sqlValue = ConvertToSqlValue(value);
-                    values.Add(sqlValue);
+                    await writer.WriteAsync(sqlValue);
                 }
             }
 
-            batchRows.Add($"({string.Join(", ", values)})");
-            rowCount++;
+            await writer.WriteAsync(")");
 
-            if (rowCount % batchSize == 0)
+            rowCount++;
+            currentBatchRow++;
+
+            if (currentBatchRow >= batchSize)
             {
-                await writer.WriteLineAsync($"{insertHeader}");
-                await writer.WriteLineAsync(string.Join(",\n", batchRows) + ";");
-                batchRows.Clear();
+                currentBatchRow = 0;
             }
         }
 
-        // Записываем оставшиеся строки
-        if (batchRows.Count > 0)
+        // Завершаем последний INSERT если были строки
+        if (rowCount > 0)
         {
-            await writer.WriteLineAsync($"{insertHeader}");
-            await writer.WriteLineAsync(string.Join(",\n", batchRows) + ";");
+            await writer.WriteLineAsync(";");
         }
     }
 
@@ -181,24 +205,68 @@ public class SqlExportService : IExportService
     {
         return value switch
         {
-            string str => $"'{EscapeSqlString(str)}'",
+            string str => BuildEscapedString(str),
             DateTime dt => $"'{dt:yyyy-MM-dd HH:mm:ss}'",
             bool b => b ? "1" : "0",
-            byte[] bytes => $"0x{BitConverter.ToString(bytes).Replace("-", "")}",
+            byte[] bytes => BuildHexString(bytes),
             null => "NULL",
             _ => value.ToString() ?? "NULL"
         };
     }
 
-    private string EscapeSqlString(string value)
+    private string BuildEscapedString(string value)
     {
-        return value
-            .Replace("\\", "\\\\")
-            .Replace("'", "\\'")
-            .Replace("\"", "\\\"")
-            .Replace("\n", "\\n")
-            .Replace("\r", "\\r")
-            .Replace("\t", "\\t")
-            .Replace("\0", "\\0");
+        var sb = new StringBuilder(value.Length + 20);
+        sb.Append('\'');
+
+        foreach (var ch in value)
+        {
+            switch (ch)
+            {
+                case '\\':
+                    sb.Append("\\\\");
+                    break;
+                case '\'':
+                    sb.Append("\\'");
+                    break;
+                case '"':
+                    sb.Append("\\\"");
+                    break;
+                case '\n':
+                    sb.Append("\\n");
+                    break;
+                case '\r':
+                    sb.Append("\\r");
+                    break;
+                case '\t':
+                    sb.Append("\\t");
+                    break;
+                case '\0':
+                    sb.Append("\\0");
+                    break;
+                default:
+                    sb.Append(ch);
+                    break;
+            }
+        }
+
+        sb.Append('\'');
+        return sb.ToString();
+    }
+
+    private string BuildHexString(byte[] bytes)
+    {
+        if (bytes.Length == 0)
+            return "0x";
+
+        var sb = new StringBuilder(bytes.Length * 2 + 2);
+        sb.Append("0x");
+
+        foreach (var b in bytes)
+        {
+            sb.Append(b.ToString("X2"));
+        }
+
+        return sb.ToString();
     }
 }
