@@ -27,7 +27,10 @@ public class SqlExportService : IExportService
             await connection.OpenAsync(cancellationToken);
 
             await using var fileStream = new FileStream(options.OutputPath, FileMode.Create, FileAccess.Write);
-            await using var writer = new StreamWriter(fileStream, Encoding.UTF8, bufferSize: 64 * 1024); // 64KB буфер для оптимизации I/O
+            await using var writer = new StreamWriter(
+                fileStream,
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+                bufferSize: 64 * 1024); // 64KB буфер для оптимизации I/O
 
             // Заголовок SQL файла
             await writer.WriteLineAsync("-- MySQL Database Export");
@@ -35,7 +38,7 @@ public class SqlExportService : IExportService
             await writer.WriteLineAsync($"-- Database: {config.Database}");
             await writer.WriteLineAsync($"-- Export Date: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
             await writer.WriteLineAsync();
-            await writer.WriteLineAsync("SET NAMES utf8mb4;");
+            await writer.WriteLineAsync("SET NAMES utf8;");
             await writer.WriteLineAsync("SET FOREIGN_KEY_CHECKS = 0;");
             await writer.WriteLineAsync();
 
@@ -136,6 +139,26 @@ public class SqlExportService : IExportService
         IProgress<ExportProgress>? detailedProgress,
         CancellationToken cancellationToken)
     {
+        // 1) Посчитаем общее количество строк для корректного процента
+        await using (var countCommand = new MySqlCommand($"SELECT COUNT(*) FROM `{tableName}`", connection))
+        {
+            var totalRowsObj = await countCommand.ExecuteScalarAsync(cancellationToken);
+            if (totalRowsObj != null && totalRowsObj != DBNull.Value)
+            {
+                tableProgress.TotalRows = Convert.ToInt64(totalRowsObj);
+            }
+        }
+
+        // 2) Секундомер по текущей таблице для отображения ElapsedTime в UI
+        var tableStopwatch = Stopwatch.StartNew();
+
+        // 3) Начальный отчёт (0 строк), чтобы UI сразу показал активную таблицу
+        tableProgress.RowsProcessed = 0;
+        tableProgress.PercentComplete = CalculatePercent(tableProgress);
+        tableProgress.StatusMessage = $"Экспорт таблицы {tableName}: 0 строк";
+        tableProgress.Elapsed = tableStopwatch.Elapsed;
+        detailedProgress?.Report(tableProgress);
+
         await using var selectCommand = new MySqlCommand($"SELECT * FROM `{tableName}`", connection);
         selectCommand.CommandTimeout = 3600; // 1 час для больших таблиц
         await using var reader = await selectCommand.ExecuteReaderAsync(cancellationToken);
@@ -153,7 +176,7 @@ public class SqlExportService : IExportService
         var insertHeader = $"INSERT INTO `{tableName}` ({string.Join(", ", columnNames.Select(c => $"`{c}`"))}) VALUES";
         var rowCount = 0L;
         var currentBatchRow = 0;
-        const int progressReportInterval = 10000; // отчет каждые 10000 строк
+        const int progressReportInterval = 1000; // более частый отчёт каждые 1000 строк
 
         while (await reader.ReadAsync(cancellationToken))
         {
@@ -211,6 +234,7 @@ public class SqlExportService : IExportService
             if (rowCount % progressReportInterval == 0)
             {
                 tableProgress.RowsProcessed = rowCount;
+                tableProgress.Elapsed = tableStopwatch.Elapsed;
                 tableProgress.PercentComplete = CalculatePercent(tableProgress);
                 tableProgress.StatusMessage = $"Экспорт таблицы {tableName}: {rowCount:N0} строк";
                 detailedProgress?.Report(tableProgress);
@@ -221,6 +245,7 @@ public class SqlExportService : IExportService
         if (rowCount > 0)
         {
             tableProgress.RowsProcessed = rowCount;
+            tableProgress.Elapsed = tableStopwatch.Elapsed;
             tableProgress.PercentComplete = CalculatePercent(tableProgress);
             tableProgress.StatusMessage = $"Завершен экспорт таблицы {tableName}: {rowCount:N0} строк";
             detailedProgress?.Report(tableProgress);
