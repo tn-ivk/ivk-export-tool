@@ -6,6 +6,9 @@ on:
       - '*.*.*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 env:
   DOTNET_VERSION: '9.0.x'
   PROJECT_PATH: 'src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj'
