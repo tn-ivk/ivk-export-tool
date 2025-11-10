@@ -26,7 +26,7 @@ public partial class ConnectionWindowViewModel : ViewModelBase
     private string _username = "user";
 
     [ObservableProperty]
-    private string _password = "mJKuyb&9!2@m";
+    private string _password = "";
 
     // Состояние
     [ObservableProperty]
