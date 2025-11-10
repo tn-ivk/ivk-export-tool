@@ -36,4 +36,14 @@
     <ProjectReference Include="..\IvkExportTool.Core\IvkExportTool.Core.csproj" />
     <ProjectReference Include="..\IvkExportTool.Infrastructure\IvkExportTool.Infrastructure.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="appsettings.template.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Content>
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
 </Project>
