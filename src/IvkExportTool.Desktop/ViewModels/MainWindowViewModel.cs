@@ -21,15 +21,6 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private string _searchText = string.Empty;
 
-    [ObservableProperty]
-    private long? _minSizeFilter;
-
-    [ObservableProperty]
-    private long? _minRowsFilter;
-
-    [ObservableProperty]
-    private bool _showEmptyTablesOnly;
-
     // Статистика
     [ObservableProperty]
     private int _selectedCount;
@@ -39,9 +30,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _totalSize = "0 B";
-
-    [ObservableProperty]
-    private int _activeFiltersCount;
 
     // Состояние чекбокса в заголовке (тристейтный)
     [ObservableProperty]
@@ -82,8 +70,6 @@ public partial class MainWindowViewModel : ViewModelBase
         : new SolidColorBrush(Color.Parse("#f44336")); // Error red
 
     public bool HasSelectedTables => SelectedCount > 0;
-
-    public bool HasActiveFilters => ActiveFiltersCount > 0;
 
     // События
     public event EventHandler? ChangeConnectionRequested;
@@ -159,25 +145,6 @@ public partial class MainWindowViewModel : ViewModelBase
         ApplyFilters();
     }
 
-    partial void OnMinSizeFilterChanged(long? value)
-    {
-        UpdateActiveFiltersCount();
-        ApplyFilters();
-    }
-
-    partial void OnMinRowsFilterChanged(long? value)
-    {
-        UpdateActiveFiltersCount();
-        ApplyFilters();
-    }
-
-    partial void OnShowEmptyTablesOnlyChanged(bool value)
-    {
-        UpdateActiveFiltersCount();
-        ApplyFilters();
-    }
-
-
     private void ApplyFilters()
     {
         var filtered = AllTables.AsEnumerable();
@@ -187,24 +154,6 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             filtered = filtered.Where(t =>
                 t.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
-        }
-
-        // Фильтр по размеру
-        if (MinSizeFilter.HasValue)
-        {
-            filtered = filtered.Where(t => t.SizeInBytes >= MinSizeFilter.Value);
-        }
-
-        // Фильтр по количеству строк
-        if (MinRowsFilter.HasValue)
-        {
-            filtered = filtered.Where(t => t.RowCount >= MinRowsFilter.Value);
-        }
-
-        // Показывать только пустые таблицы
-        if (ShowEmptyTablesOnly)
-        {
-            filtered = filtered.Where(t => t.RowCount == 0);
         }
 
         FilteredTables = new ObservableCollection<TableItemViewModel>(filtered);
@@ -255,16 +204,6 @@ public partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasSelectedTables));
     }
 
-    private void UpdateActiveFiltersCount()
-    {
-        int count = 0;
-        if (MinSizeFilter.HasValue) count++;
-        if (MinRowsFilter.HasValue) count++;
-        if (ShowEmptyTablesOnly) count++;
-
-        ActiveFiltersCount = count;
-    }
-
     private static string FormatBytes(long bytes)
     {
         if (bytes == 0) return "0 B";
@@ -280,15 +219,6 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         return $"{size:0.##} {sizes[order]}";
-    }
-
-    [RelayCommand]
-    private void ClearFilters()
-    {
-        MinSizeFilter = null;
-        MinRowsFilter = null;
-        ShowEmptyTablesOnly = false;
-        SearchText = string.Empty;
     }
 
     #endregion
@@ -371,54 +301,24 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void SelectAllTables()
-    {
-        foreach (var table in FilteredTables)
-        {
-            table.IsSelected = true;
-        }
-    }
-
-    [RelayCommand]
-    private void DeselectAllTables()
-    {
-        foreach (var table in FilteredTables)
-        {
-            table.IsSelected = false;
-        }
-    }
-
-    [RelayCommand]
     private void ToggleAllTablesSelection()
     {
         // Если все таблицы выбраны - снять выбор со всех
         if (TablesSelectionState == true)
         {
-            DeselectAllTables();
+            foreach (var table in FilteredTables)
+            {
+                table.IsSelected = false;
+            }
         }
         // Если выбраны не все или не выбрано ни одной - выбрать все
         else
         {
-            SelectAllTables();
+            foreach (var table in FilteredTables)
+            {
+                table.IsSelected = true;
+            }
         }
-    }
-
-    [RelayCommand]
-    private void FilterBySize(long minSizeMB)
-    {
-        MinSizeFilter = minSizeMB * 1024 * 1024; // Convert MB to bytes
-    }
-
-    [RelayCommand]
-    private void FilterByRows(long minRows)
-    {
-        MinRowsFilter = minRows;
-    }
-
-    [RelayCommand]
-    private void ShowEmptyTables()
-    {
-        ShowEmptyTablesOnly = !ShowEmptyTablesOnly;
     }
 
     #endregion
