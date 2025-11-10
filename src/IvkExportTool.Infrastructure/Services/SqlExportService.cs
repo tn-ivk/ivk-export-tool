@@ -332,7 +332,7 @@ public class SqlExportService : IExportService
     private string BuildHexString(byte[] bytes)
     {
         if (bytes.Length == 0)
-            return "0x";
+            return "X''";
 
         var sb = new StringBuilder(bytes.Length * 2 + 2);
         sb.Append("0x");
