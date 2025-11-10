@@ -15,6 +15,7 @@ public class SqlExportService : IExportService
         ConnectionConfig config,
         ExportOptions options,
         IProgress<int>? progress = null,
+        IProgress<ExportProgress>? detailedProgress = null,
         CancellationToken cancellationToken = default)
     {
         var stopwatch = Stopwatch.StartNew();
@@ -39,18 +40,26 @@ public class SqlExportService : IExportService
             await writer.WriteLineAsync();
 
             var totalTables = options.Tables.Count;
-            var currentTable = 0;
+            var currentTableIndex = 0;
 
             foreach (var tableName in options.Tables)
             {
                 if (cancellationToken.IsCancellationRequested)
                     break;
 
-                await ExportTableAsync(connection, writer, tableName, options, cancellationToken);
+                var tableProgress = new ExportProgress
+                {
+                    CurrentTable = tableName,
+                    CurrentTableIndex = currentTableIndex,
+                    TotalTables = totalTables,
+                    Elapsed = stopwatch.Elapsed
+                };
+
+                await ExportTableAsync(connection, writer, tableName, options, tableProgress, detailedProgress, cancellationToken);
 
                 result.TablesExported++;
-                currentTable++;
-                progress?.Report((int)((double)currentTable / totalTables * 100));
+                currentTableIndex++;
+                progress?.Report((int)((double)currentTableIndex / totalTables * 100));
             }
 
             // Футер SQL файла
@@ -76,6 +85,8 @@ public class SqlExportService : IExportService
         StreamWriter writer,
         string tableName,
         ExportOptions options,
+        ExportProgress tableProgress,
+        IProgress<ExportProgress>? detailedProgress,
         CancellationToken cancellationToken)
     {
         await writer.WriteLineAsync($"-- ----------------------------");
@@ -110,7 +121,7 @@ public class SqlExportService : IExportService
             await writer.WriteLineAsync($"-- Records of {tableName}");
             await writer.WriteLineAsync($"-- ----------------------------");
 
-            await ExportTableDataAsync(connection, writer, tableName, options.BatchSize, cancellationToken);
+            await ExportTableDataAsync(connection, writer, tableName, options.BatchSize, tableProgress, detailedProgress, cancellationToken);
         }
 
         await writer.WriteLineAsync();
@@ -121,6 +132,8 @@ public class SqlExportService : IExportService
         StreamWriter writer,
         string tableName,
         int batchSize,
+        ExportProgress tableProgress,
+        IProgress<ExportProgress>? detailedProgress,
         CancellationToken cancellationToken)
     {
         await using var selectCommand = new MySqlCommand($"SELECT * FROM `{tableName}`", connection);
@@ -138,8 +151,9 @@ public class SqlExportService : IExportService
         }
 
         var insertHeader = $"INSERT INTO `{tableName}` ({string.Join(", ", columnNames.Select(c => $"`{c}`"))}) VALUES";
-        var rowCount = 0;
+        var rowCount = 0L;
         var currentBatchRow = 0;
+        const int progressReportInterval = 10000; // отчет каждые 10000 строк
 
         while (await reader.ReadAsync(cancellationToken))
         {
@@ -192,6 +206,24 @@ public class SqlExportService : IExportService
             {
                 currentBatchRow = 0;
             }
+
+            // Отчет о прогрессе каждые N строк
+            if (rowCount % progressReportInterval == 0)
+            {
+                tableProgress.RowsProcessed = rowCount;
+                tableProgress.PercentComplete = CalculatePercent(tableProgress);
+                tableProgress.StatusMessage = $"Экспорт таблицы {tableName}: {rowCount:N0} строк";
+                detailedProgress?.Report(tableProgress);
+            }
+        }
+
+        // Финальный отчет о прогрессе
+        if (rowCount > 0)
+        {
+            tableProgress.RowsProcessed = rowCount;
+            tableProgress.PercentComplete = CalculatePercent(tableProgress);
+            tableProgress.StatusMessage = $"Завершен экспорт таблицы {tableName}: {rowCount:N0} строк";
+            detailedProgress?.Report(tableProgress);
         }
 
         // Завершаем последний INSERT если были строки
@@ -199,6 +231,24 @@ public class SqlExportService : IExportService
         {
             await writer.WriteLineAsync(";");
         }
+    }
+
+    private int CalculatePercent(ExportProgress progress)
+    {
+        if (progress.TotalTables == 0)
+            return 0;
+
+        // Процент = (завершенные таблицы + прогресс текущей таблицы) / общее количество таблиц * 100
+        var completedTables = progress.CurrentTableIndex;
+        var currentTableProgress = 0.0;
+
+        if (progress.TotalRows.HasValue && progress.TotalRows.Value > 0)
+        {
+            currentTableProgress = (double)progress.RowsProcessed / progress.TotalRows.Value;
+        }
+
+        var totalProgress = (completedTables + currentTableProgress) / progress.TotalTables;
+        return (int)(totalProgress * 100);
     }
 
     private string ConvertToSqlValue(object value)

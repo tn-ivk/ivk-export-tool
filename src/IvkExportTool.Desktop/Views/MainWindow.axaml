@@ -202,65 +202,122 @@
     <!-- ========== 3. STATUS BAR ========== -->
     <!-- Нижняя панель со статистикой и кнопкой экспорта -->
     <Border Grid.Row="2" Classes="status-bar">
-      <Grid ColumnDefinitions="Auto,*,Auto">
+      <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
 
-        <!-- Сообщение о статусе -->
-        <TextBlock Grid.Column="0"
-                   Text="{Binding StatusMessage}"
-                   Foreground="{StaticResource OnSurfaceVariantBrush}"
-                   FontSize="13"
-                   VerticalAlignment="Center"
-                   Margin="0,0,16,0"
-                   TextTrimming="CharacterEllipsis"
-                   MaxWidth="300"/>
+        <!-- Детальный прогресс экспорта (показывается только во время экспорта) -->
+        <Border Grid.Row="0"
+                IsVisible="{Binding IsExporting}"
+                Background="{StaticResource SurfaceContainerHighBrush}"
+                Padding="16,8"
+                CornerRadius="8 8 0 0">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="4">
+              <!-- Текущая таблица и строки -->
+              <TextBlock FontSize="13" FontWeight="Medium">
+                <Run Text="Таблица:"/>
+                <Run Text="{Binding CurrentTableName}"
+                     Foreground="{StaticResource PrimaryBrush}"/>
+                <Run Text="•"/>
+                <Run Text="{Binding CurrentTableRowsProcessed, StringFormat='{}{0:N0}'}"/>
+                <Run Text="строк"/>
+              </TextBlock>
 
-        <!-- Статистика -->
-        <StackPanel Grid.Column="1"
-                    Orientation="Horizontal"
-                    Spacing="16">
+              <!-- Детальное сообщение о статусе -->
+              <TextBlock Text="{Binding DetailedStatusMessage}"
+                         FontSize="12"
+                         Foreground="{StaticResource OnSurfaceVariantBrush}"
+                         TextTrimming="CharacterEllipsis"/>
 
-          <!-- Выбрано таблиц -->
-          <TextBlock Classes="status-text">
-            <Run Text="✓ Выбрано:"/>
-            <Run Text="{Binding SelectedCount}"
-                 FontWeight="SemiBold"
-                 Foreground="{StaticResource PrimaryBrush}"/>
-            <Run Text="таблиц"/>
-          </TextBlock>
+              <!-- Progress Bar -->
+              <ProgressBar Value="{Binding ExportProgress}"
+                           Minimum="0" Maximum="100"
+                           Height="6"
+                           Margin="0,4,0,0"
+                           Foreground="{StaticResource PrimaryBrush}"/>
+            </StackPanel>
 
-          <TextBlock Text="•"
-                     Foreground="{StaticResource BorderBrush}"
-                     VerticalAlignment="Center"/>
+            <!-- Прошедшее время -->
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="16,0,0,0">
+              <TextBlock Text="Время"
+                         FontSize="11"
+                         Foreground="{StaticResource OnSurfaceVariantBrush}"
+                         HorizontalAlignment="Center"/>
+              <TextBlock Text="{Binding ElapsedTime}"
+                         FontSize="14"
+                         FontWeight="SemiBold"
+                         FontFamily="Consolas"
+                         Foreground="{StaticResource PrimaryBrush}"
+                         HorizontalAlignment="Center"/>
+            </StackPanel>
+          </Grid>
+        </Border>
 
-          <!-- Общее количество строк -->
-          <TextBlock Classes="status-text">
-            <Run Text="{Binding TotalRows, StringFormat='{}{0:N0}'}"/>
-            <Run Text="строк"/>
-          </TextBlock>
+        <!-- Основная строка статуса -->
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="16,8">
 
-          <TextBlock Text="•"
-                     Foreground="{StaticResource BorderBrush}"
-                     VerticalAlignment="Center"/>
+          <!-- Сообщение о статусе -->
+          <TextBlock Grid.Column="0"
+                     Text="{Binding StatusMessage}"
+                     Foreground="{StaticResource OnSurfaceVariantBrush}"
+                     FontSize="13"
+                     VerticalAlignment="Center"
+                     Margin="0,0,16,0"
+                     TextTrimming="CharacterEllipsis"
+                     MaxWidth="300"/>
 
-          <!-- Общий размер -->
-          <TextBlock Classes="status-text">
-            <Run Text="{Binding TotalSize}"/>
-          </TextBlock>
-        </StackPanel>
+          <!-- Статистика -->
+          <StackPanel Grid.Column="1"
+                      Orientation="Horizontal"
+                      Spacing="16"
+                      IsVisible="{Binding !IsExporting}">
 
-        <!-- Кнопка экспорта -->
-        <Button Grid.Column="2"
-                Classes="accent export-button"
-                Command="{Binding ExportCommand}"
-                IsEnabled="{Binding HasSelectedTables}">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <PathIcon Data="{StaticResource SaveIcon}"
-                      Width="16" Height="16"
-                      Foreground="White"/>
-            <TextBlock Text="Экспортировать SQL"
-                       FontWeight="SemiBold"/>
+            <!-- Выбрано таблиц -->
+            <TextBlock Classes="status-text">
+              <Run Text="✓ Выбрано:"/>
+              <Run Text="{Binding SelectedCount}"
+                   FontWeight="SemiBold"
+                   Foreground="{StaticResource PrimaryBrush}"/>
+              <Run Text="таблиц"/>
+            </TextBlock>
+
+            <TextBlock Text="•"
+                       Foreground="{StaticResource BorderBrush}"
+                       VerticalAlignment="Center"/>
+
+            <!-- Общее количество строк -->
+            <TextBlock Classes="status-text">
+              <Run Text="{Binding TotalRows, StringFormat='{}{0:N0}'}"/>
+              <Run Text="строк"/>
+            </TextBlock>
+
+            <TextBlock Text="•"
+                       Foreground="{StaticResource BorderBrush}"
+                       VerticalAlignment="Center"/>
+
+            <!-- Общий размер -->
+            <TextBlock Classes="status-text">
+              <Run Text="{Binding TotalSize}"/>
+            </TextBlock>
           </StackPanel>
-        </Button>
+
+          <!-- Кнопка экспорта -->
+          <Button Grid.Column="2"
+                  Classes="accent export-button"
+                  Command="{Binding ExportCommand}"
+                  IsEnabled="{Binding HasSelectedTables}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <PathIcon Data="{StaticResource SaveIcon}"
+                        Width="16" Height="16"
+                        Foreground="White"/>
+              <TextBlock Text="Экспортировать SQL"
+                         FontWeight="SemiBold"/>
+            </StackPanel>
+          </Button>
+        </Grid>
       </Grid>
     </Border>
 

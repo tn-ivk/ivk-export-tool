@@ -50,6 +50,18 @@ public partial class MainWindowViewModel : ViewModelBase
     private string _statusMessage = "Загрузка...";
 
     [ObservableProperty]
+    private string _detailedStatusMessage = string.Empty;
+
+    [ObservableProperty]
+    private string _currentTableName = string.Empty;
+
+    [ObservableProperty]
+    private long _currentTableRowsProcessed;
+
+    [ObservableProperty]
+    private string _elapsedTime = "00:00:00";
+
+    [ObservableProperty]
     private bool _isLoading;
 
     [ObservableProperty]
@@ -233,6 +245,11 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         return $"{size:0.##} {sizes[order]}";
+    }
+
+    private static string FormatElapsedTime(TimeSpan elapsed)
+    {
+        return $"{(int)elapsed.TotalHours:D2}:{elapsed.Minutes:D2}:{elapsed.Seconds:D2}";
     }
 
     #endregion
@@ -471,7 +488,16 @@ public partial class MainWindowViewModel : ViewModelBase
                 ExportProgress = percent;
             });
 
-            var exportResult = await _exportService.ExportAsync(_connectionConfig, options, progress);
+            var detailedProgress = new Progress<ExportProgress>(progressInfo =>
+            {
+                CurrentTableName = progressInfo.CurrentTable;
+                CurrentTableRowsProcessed = progressInfo.RowsProcessed;
+                ElapsedTime = FormatElapsedTime(progressInfo.Elapsed);
+                ExportProgress = progressInfo.PercentComplete;
+                DetailedStatusMessage = progressInfo.StatusMessage;
+            });
+
+            var exportResult = await _exportService.ExportAsync(_connectionConfig, options, progress, detailedProgress);
 
             if (exportResult.Success)
             {
@@ -497,6 +523,10 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             IsExporting = false;
             ExportProgress = 0;
+            CurrentTableName = string.Empty;
+            CurrentTableRowsProcessed = 0;
+            DetailedStatusMessage = string.Empty;
+            ElapsedTime = "00:00:00";
         }
     }
 
