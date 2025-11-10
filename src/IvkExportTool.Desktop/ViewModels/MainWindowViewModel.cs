@@ -19,6 +19,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IExportService _exportService;
     private readonly IAppSettingsService _appSettingsService;
     private ConnectionConfig? _connectionConfig;
+    private Avalonia.Controls.Window? _window;
 
     // Поиск и фильтрация
     [ObservableProperty]
@@ -90,6 +91,14 @@ public partial class MainWindowViewModel : ViewModelBase
         _databaseService = databaseService;
         _exportService = exportService;
         _appSettingsService = appSettingsService;
+    }
+
+    /// <summary>
+    /// Устанавливает ссылку на окно для использования в диалогах
+    /// </summary>
+    public void SetWindow(Avalonia.Controls.Window window)
+    {
+        _window = window;
     }
 
     /// <summary>
@@ -375,9 +384,9 @@ public partial class MainWindowViewModel : ViewModelBase
         var suggestedFileName = GenerateExportFileName(selectedTables);
 
         // Открываем диалог сохранения файла
-        var topLevel = Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
+        var topLevel = _window ?? (Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
             ? desktop.MainWindow
-            : null;
+            : null);
 
         if (topLevel == null)
         {
@@ -404,9 +413,29 @@ public partial class MainWindowViewModel : ViewModelBase
         };
 
         // Устанавливаем начальную директорию
-        if (Directory.Exists(defaultDirectory))
+        try
         {
-            saveDialog.SuggestedStartLocation = await topLevel.StorageProvider.TryGetFolderFromPathAsync(new Uri(defaultDirectory));
+            if (Directory.Exists(defaultDirectory))
+            {
+                var fullPath = Path.GetFullPath(defaultDirectory);
+                // Создаём URI в формате file:// (работает кроссплатформенно)
+                var directoryUri = new UriBuilder
+                {
+                    Scheme = "file",
+                    Host = string.Empty,
+                    Path = fullPath
+                }.Uri;
+
+                var folder = await topLevel.StorageProvider.TryGetFolderFromPathAsync(directoryUri);
+                if (folder != null)
+                {
+                    saveDialog.SuggestedStartLocation = folder;
+                }
+            }
+        }
+        catch
+        {
+            // Если не удалось установить начальную директорию, продолжаем без неё
         }
 
         var result = await topLevel.StorageProvider.SaveFilePickerAsync(saveDialog);

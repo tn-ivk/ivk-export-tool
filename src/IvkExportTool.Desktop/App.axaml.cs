@@ -97,6 +97,9 @@ public partial class App : Application
             WindowStartupLocation = WindowStartupLocation.Manual
         };
 
+        // Передаём ссылку на окно в ViewModel для диалогов
+        mainViewModel.SetWindow(_mainWindow);
+
         // Подписываемся на событие смены подключения
         mainViewModel.ChangeConnectionRequested += OnChangeConnectionRequested;
 
