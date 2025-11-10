@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Media;
@@ -15,6 +17,7 @@ public partial class MainWindowViewModel : ViewModelBase
 {
     private readonly IDatabaseService _databaseService;
     private readonly IExportService _exportService;
+    private readonly IAppSettingsService _appSettingsService;
     private ConnectionConfig? _connectionConfig;
 
     // Поиск и фильтрация
@@ -74,17 +77,19 @@ public partial class MainWindowViewModel : ViewModelBase
     // События
     public event EventHandler? ChangeConnectionRequested;
 
-    public MainWindowViewModel() : this(null!, null!)
+    public MainWindowViewModel() : this(null!, null!, null!)
     {
         // Конструктор для дизайнера
     }
 
     public MainWindowViewModel(
         IDatabaseService databaseService,
-        IExportService exportService)
+        IExportService exportService,
+        IAppSettingsService appSettingsService)
     {
         _databaseService = databaseService;
         _exportService = exportService;
+        _appSettingsService = appSettingsService;
     }
 
     /// <summary>
@@ -325,6 +330,25 @@ public partial class MainWindowViewModel : ViewModelBase
 
     #region Export Commands
 
+    /// <summary>
+    /// Генерирует имя файла для экспорта на основе выбранных таблиц
+    /// </summary>
+    private string GenerateExportFileName(List<TableInfo> selectedTables)
+    {
+        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+
+        if (selectedTables.Count == 1)
+        {
+            // Если выбрана только одна таблица: ИмяБазыДанных_ИмяТаблицы_ДатаВремя.sql
+            return $"{SelectedDatabase}_{selectedTables[0].Name}_{timestamp}.sql";
+        }
+        else
+        {
+            // Если таблиц несколько: ИмяБазыДанных_ДатаВремя.sql
+            return $"{SelectedDatabase}_{timestamp}.sql";
+        }
+    }
+
     [RelayCommand]
     private async Task ExportAsync()
     {
@@ -341,8 +365,60 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
-        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-        var outputPath = $"{SelectedDatabase}_{timestamp}.sql";
+        // Получаем последнюю использованную папку или текущую директорию
+        var lastDirectory = await _appSettingsService.LoadLastExportDirectoryAsync();
+        var defaultDirectory = string.IsNullOrEmpty(lastDirectory)
+            ? AppContext.BaseDirectory
+            : lastDirectory;
+
+        // Генерируем предложенное имя файла
+        var suggestedFileName = GenerateExportFileName(selectedTables);
+
+        // Открываем диалог сохранения файла
+        var topLevel = Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
+            ? desktop.MainWindow
+            : null;
+
+        if (topLevel == null)
+        {
+            StatusMessage = "✗ Не удалось открыть диалог сохранения файла";
+            return;
+        }
+
+        var saveDialog = new Avalonia.Platform.Storage.FilePickerSaveOptions
+        {
+            Title = "Сохранить экспорт",
+            SuggestedFileName = suggestedFileName,
+            DefaultExtension = "sql",
+            FileTypeChoices = new[]
+            {
+                new Avalonia.Platform.Storage.FilePickerFileType("SQL файлы")
+                {
+                    Patterns = new[] { "*.sql" }
+                },
+                new Avalonia.Platform.Storage.FilePickerFileType("Все файлы")
+                {
+                    Patterns = new[] { "*" }
+                }
+            }
+        };
+
+        // Устанавливаем начальную директорию
+        if (Directory.Exists(defaultDirectory))
+        {
+            saveDialog.SuggestedStartLocation = await topLevel.StorageProvider.TryGetFolderFromPathAsync(new Uri(defaultDirectory));
+        }
+
+        var result = await topLevel.StorageProvider.SaveFilePickerAsync(saveDialog);
+
+        if (result == null)
+        {
+            // Пользователь отменил диалог
+            StatusMessage = "Экспорт отменен";
+            return;
+        }
+
+        var outputPath = result.Path.LocalPath;
 
         IsExporting = true;
         ExportProgress = 0;
@@ -366,15 +442,22 @@ public partial class MainWindowViewModel : ViewModelBase
                 ExportProgress = percent;
             });
 
-            var result = await _exportService.ExportAsync(_connectionConfig, options, progress);
+            var exportResult = await _exportService.ExportAsync(_connectionConfig, options, progress);
 
-            if (result.Success)
+            if (exportResult.Success)
             {
-                StatusMessage = $"✓ Экспорт завершен: {result.TablesExported} таблиц, {result.RowsExported:N0} строк. Файл: {result.OutputPath}";
+                // Сохраняем папку для следующего экспорта
+                var exportDirectory = Path.GetDirectoryName(outputPath);
+                if (!string.IsNullOrEmpty(exportDirectory))
+                {
+                    await _appSettingsService.SaveLastExportDirectoryAsync(exportDirectory);
+                }
+
+                StatusMessage = $"✓ Экспорт завершен: {exportResult.TablesExported} таблиц, {exportResult.RowsExported:N0} строк. Файл: {exportResult.OutputPath}";
             }
             else
             {
-                StatusMessage = $"✗ Ошибка экспорта: {result.ErrorMessage}";
+                StatusMessage = $"✗ Ошибка экспорта: {exportResult.ErrorMessage}";
             }
         }
         catch (Exception ex)
