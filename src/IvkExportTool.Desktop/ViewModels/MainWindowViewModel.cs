@@ -1,13 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using IvkExportTool.Core.Enums;
 using IvkExportTool.Core.Interfaces;
 using IvkExportTool.Core.Models;
-using System.Threading;
 
 namespace IvkExportTool.Desktop.ViewModels;
 
@@ -15,192 +17,119 @@ public partial class MainWindowViewModel : ViewModelBase
 {
     private readonly IDatabaseService _databaseService;
     private readonly IExportService _exportService;
-    private readonly IAppSettingsService? _appSettingsService;
-    private readonly SemaphoreSlim _saveSemaphore = new(1, 1);
-    private CancellationTokenSource? _saveCts;
-    private bool _isInitializingSettings;
+    private readonly IAppSettingsService _appSettingsService;
+    private ConnectionConfig? _connectionConfig;
+    private Avalonia.Controls.Window? _window;
+
+    // Поиск и фильтрация
+    [ObservableProperty]
+    private string _searchText = string.Empty;
+
+    // Статистика
+    [ObservableProperty]
+    private int _selectedCount;
 
     [ObservableProperty]
-    private string _host = "192.168.233.101";
+    private long _totalRows;
 
     [ObservableProperty]
-    private string _port = "3306";
+    private string _totalSize = "0 B";
 
+    // Состояние чекбокса в заголовке (тристейтный)
     [ObservableProperty]
-    private string _username = "user";
+    private bool? _tablesSelectionState = false;
 
-    [ObservableProperty]
-    private string _password = "mJKuyb&9!2@m";
-
-    [ObservableProperty]
-    private string? _selectedDatabase;
-
-    [ObservableProperty]
-    private string _statusMessage = "Не подключено";
-
-    [ObservableProperty]
-    private bool _isConnected;
-
-    [ObservableProperty]
-    private bool _isLoading;
-
+    // Экспорт
     [ObservableProperty]
     private int _exportProgress;
 
     [ObservableProperty]
     private bool _isExporting;
 
+    [ObservableProperty]
+    private string _statusMessage = "Загрузка...";
+
+    [ObservableProperty]
+    private string _detailedStatusMessage = string.Empty;
+
+    [ObservableProperty]
+    private string _currentTableName = string.Empty;
+
+    [ObservableProperty]
+    private long _currentTableRowsProcessed;
+
+    [ObservableProperty]
+    private string _elapsedTime = "00:00:00";
+
+    [ObservableProperty]
+    private bool _isLoading;
+
+    [ObservableProperty]
+    private string? _selectedDatabase;
+
+    // Коллекции
     public ObservableCollection<string> Databases { get; } = new();
-    public ObservableCollection<TableInfo> Tables { get; } = new();
+
+    [ObservableProperty]
+    private ObservableCollection<TableItemViewModel> _allTables = new();
+
+    [ObservableProperty]
+    private ObservableCollection<TableItemViewModel> _filteredTables = new();
+
+    // Свойства для ConnectionStatusBar
+    public string ConnectionString => _connectionConfig != null
+        ? $"{_connectionConfig.Username}@{_connectionConfig.Host}:{_connectionConfig.Port}"
+        : "Не подключено";
+
+    public SolidColorBrush ConnectionStatusColor => _connectionConfig != null
+        ? new SolidColorBrush(Color.Parse("#4caf50"))  // Success green
+        : new SolidColorBrush(Color.Parse("#f44336")); // Error red
+
+    public bool HasSelectedTables => SelectedCount > 0;
+
+    // События
+    public event EventHandler? ChangeConnectionRequested;
 
     public MainWindowViewModel() : this(null!, null!, null!)
     {
         // Конструктор для дизайнера
     }
 
-    public MainWindowViewModel(IDatabaseService databaseService, IExportService exportService, IAppSettingsService appSettingsService)
+    public MainWindowViewModel(
+        IDatabaseService databaseService,
+        IExportService exportService,
+        IAppSettingsService appSettingsService)
     {
         _databaseService = databaseService;
         _exportService = exportService;
         _appSettingsService = appSettingsService;
-
-        _ = LoadSettingsAsync();
     }
 
-    private ConnectionConfig GetConnectionConfig()
+    /// <summary>
+    /// Устанавливает ссылку на окно для использования в диалогах
+    /// </summary>
+    public void SetWindow(Avalonia.Controls.Window window)
     {
-        return new ConnectionConfig
-        {
-            Host = Host,
-            Port = int.TryParse(Port, out var port) ? port : 3306,
-            Username = Username,
-            Password = Password,
-            Database = SelectedDatabase
-        };
+        _window = window;
     }
 
-    private async Task LoadSettingsAsync()
+    /// <summary>
+    /// Инициализация с существующим подключением
+    /// </summary>
+    public async Task InitializeWithConnectionAsync(ConnectionConfig connectionConfig)
     {
-        if (_appSettingsService is null)
-            return;
+        _connectionConfig = connectionConfig;
+        OnPropertyChanged(nameof(ConnectionString));
+        OnPropertyChanged(nameof(ConnectionStatusColor));
 
-        _isInitializingSettings = true;
-
-        try
-        {
-            var config = await _appSettingsService.LoadConnectionAsync();
-            Host = config.Host;
-            Port = config.Port.ToString();
-            Username = config.Username;
-            Password = config.Password;
-            SelectedDatabase = config.Database;
-        }
-        catch
-        {
-            // Игнорируем ошибки загрузки настроек, чтобы не мешать работе UI.
-        }
-        finally
-        {
-            _isInitializingSettings = false;
-        }
-    }
-
-    private void ScheduleSaveSettings()
-    {
-        if (_appSettingsService is null || _isInitializingSettings)
-            return;
-
-        _saveCts?.Cancel();
-        var cts = new CancellationTokenSource();
-        _saveCts = cts;
-
-        Task.Run(async () =>
-        {
-            try
-            {
-                await Task.Delay(500, cts.Token);
-                await SaveSettingsInternalAsync();
-            }
-            catch (TaskCanceledException)
-            {
-                // Прерывание задержки – новая правка пользователя.
-            }
-        });
-    }
-
-    private async Task SaveSettingsInternalAsync()
-    {
-        if (_appSettingsService is null)
-            return;
-
-        try
-        {
-            await _saveSemaphore.WaitAsync();
-
-            try
-            {
-                var config = GetConnectionConfig();
-                await _appSettingsService.SaveConnectionAsync(config);
-            }
-            finally
-            {
-                _saveSemaphore.Release();
-            }
-        }
-        catch
-        {
-            // Игнорируем ошибки сохранения, чтобы не блокировать UI.
-        }
-    }
-
-    partial void OnHostChanged(string value) => ScheduleSaveSettings();
-    partial void OnPortChanged(string value) => ScheduleSaveSettings();
-    partial void OnUsernameChanged(string value) => ScheduleSaveSettings();
-    partial void OnPasswordChanged(string value) => ScheduleSaveSettings();
-    partial void OnSelectedDatabaseChanged(string? value) => ScheduleSaveSettings();
-
-    [RelayCommand]
-    private async Task TestConnectionAsync()
-    {
         IsLoading = true;
-        StatusMessage = "Тестирование подключения...";
+        StatusMessage = "Загрузка списка баз данных...";
 
         try
         {
-            var config = GetConnectionConfig();
-            var result = await _databaseService.TestConnectionAsync(config);
+            var databases = await _databaseService.GetDatabasesAsync(connectionConfig);
 
-            if (result)
-            {
-                StatusMessage = "✓ Подключение успешно";
-            }
-            else
-            {
-                StatusMessage = "✗ Ошибка подключения";
-            }
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"✗ Ошибка: {ex.Message}";
-        }
-        finally
-        {
-            IsLoading = false;
-        }
-    }
-
-    [RelayCommand]
-    private async Task ConnectAsync()
-    {
-        IsLoading = true;
-        StatusMessage = "Подключение...";
-        Databases.Clear();
-
-        try
-        {
-            var config = GetConnectionConfig();
-            var databases = await _databaseService.GetDatabasesAsync(config);
-
+            Databases.Clear();
             foreach (var db in databases)
             {
                 Databases.Add(db);
@@ -208,53 +137,193 @@ public partial class MainWindowViewModel : ViewModelBase
 
             if (Databases.Count > 0)
             {
+                // Устанавливаем первую БД, что вызовет OnSelectedDatabaseChanged
+                // и загрузит таблицы через RefreshTablesAsync
                 SelectedDatabase = Databases[0];
-                IsConnected = true;
-                StatusMessage = $"✓ Подключено. Найдено {Databases.Count} баз данных";
-
-                // Автоматически загружаем таблицы первой БД
-                await RefreshTablesAsync();
+                // RefreshTablesAsync управляет IsLoading самостоятельно
             }
             else
             {
-                StatusMessage = "✗ Не найдено баз данных";
+                StatusMessage = "Не найдено баз данных";
+                IsLoading = false;
             }
         }
         catch (Exception ex)
         {
-            StatusMessage = $"✗ Ошибка: {ex.Message}";
-            IsConnected = false;
+            StatusMessage = $"Ошибка: {ex.Message}";
+            IsLoading = false;
+        }
+    }
+
+    partial void OnSelectedDatabaseChanged(string? value)
+    {
+        if (!string.IsNullOrEmpty(value) && _connectionConfig != null)
+        {
+            _connectionConfig.Database = value;
+            _ = RefreshTablesAsync();
+        }
+    }
+
+    #region Search and Filtering
+
+    partial void OnSearchTextChanged(string value)
+    {
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        var filtered = AllTables.AsEnumerable();
+
+        // Поиск по имени
+        if (!string.IsNullOrWhiteSpace(SearchText))
+        {
+            filtered = filtered.Where(t =>
+                t.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+        }
+
+        FilteredTables = new ObservableCollection<TableItemViewModel>(filtered);
+
+        // Подписываемся на изменения IsSelected для обновления статистики
+        foreach (var table in FilteredTables)
+        {
+            table.PropertyChanged -= Table_PropertyChanged;
+            table.PropertyChanged += Table_PropertyChanged;
+        }
+
+        UpdateStatistics();
+    }
+
+    private void Table_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(TableItemViewModel.IsSelected))
+        {
+            UpdateStatistics();
+        }
+    }
+
+    private void UpdateStatistics()
+    {
+        var selected = FilteredTables.Where(t => t.IsSelected).ToList();
+        SelectedCount = selected.Count;
+        TotalRows = selected.Sum(t => t.RowCount);
+        TotalSize = FormatBytes(selected.Sum(t => t.SizeInBytes));
+
+        // Обновляем состояние чекбокса в заголовке
+        if (FilteredTables.Count == 0)
+        {
+            TablesSelectionState = false;
+        }
+        else if (SelectedCount == 0)
+        {
+            TablesSelectionState = false;
+        }
+        else if (SelectedCount == FilteredTables.Count)
+        {
+            TablesSelectionState = true;
+        }
+        else
+        {
+            TablesSelectionState = null; // Частичный выбор
+        }
+
+        OnPropertyChanged(nameof(HasSelectedTables));
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes == 0) return "0 B";
+
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        double size = bytes;
+        int order = 0;
+
+        while (size >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            size /= 1024;
+        }
+
+        return $"{size:0.##} {sizes[order]}";
+    }
+
+    private static string FormatElapsedTime(TimeSpan elapsed)
+    {
+        return $"{(int)elapsed.TotalHours:D2}:{elapsed.Minutes:D2}:{elapsed.Seconds:D2}";
+    }
+
+    #endregion
+
+    #region Connection Commands
+
+    [RelayCommand]
+    private void ChangeConnection()
+    {
+        ChangeConnectionRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    [RelayCommand]
+    private async Task RefreshDatabasesAsync()
+    {
+        if (_connectionConfig == null) return;
+
+        IsLoading = true;
+        StatusMessage = "Обновление списка баз данных...";
+
+        try
+        {
+            var databases = await _databaseService.GetDatabasesAsync(_connectionConfig);
+
+            Databases.Clear();
+            foreach (var db in databases)
+            {
+                Databases.Add(db);
+            }
+
+            StatusMessage = $"Загружено {Databases.Count} баз данных";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Ошибка: {ex.Message}";
         }
         finally
         {
             IsLoading = false;
         }
     }
+
+    #endregion
+
+    #region Table Commands
 
     [RelayCommand]
     private async Task RefreshTablesAsync()
     {
-        if (string.IsNullOrEmpty(SelectedDatabase))
+        if (string.IsNullOrEmpty(SelectedDatabase) || _connectionConfig == null)
             return;
 
         IsLoading = true;
-        Tables.Clear();
+        AllTables.Clear();
+        FilteredTables.Clear();
+        StatusMessage = "Загрузка таблиц...";
 
         try
         {
-            var config = GetConnectionConfig();
-            var dbInfo = await _databaseService.GetDatabaseInfoAsync(config);
+            _connectionConfig.Database = SelectedDatabase;
+            var dbInfo = await _databaseService.GetDatabaseInfoAsync(_connectionConfig);
 
             foreach (var table in dbInfo.Tables)
             {
-                Tables.Add(table);
+                var tableVm = new TableItemViewModel(table);
+                AllTables.Add(tableVm);
             }
 
-            StatusMessage = $"✓ Загружено {Tables.Count} таблиц из базы '{SelectedDatabase}'";
+            ApplyFilters();
+            StatusMessage = $"Загружено {AllTables.Count} таблиц из базы '{SelectedDatabase}'";
         }
         catch (Exception ex)
         {
-            StatusMessage = $"✗ Ошибка загрузки таблиц: {ex.Message}";
+            StatusMessage = $"Ошибка загрузки таблиц: {ex.Message}";
         }
         finally
         {
@@ -263,27 +332,58 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void SelectAllTables()
+    private void ToggleAllTablesSelection()
     {
-        foreach (var table in Tables)
+        // Если все таблицы выбраны - снять выбор со всех
+        if (TablesSelectionState == true)
         {
-            table.IsSelected = true;
+            foreach (var table in FilteredTables)
+            {
+                table.IsSelected = false;
+            }
+        }
+        // Если выбраны не все или не выбрано ни одной - выбрать все
+        else
+        {
+            foreach (var table in FilteredTables)
+            {
+                table.IsSelected = true;
+            }
         }
     }
 
-    [RelayCommand]
-    private void DeselectAllTables()
+    #endregion
+
+    #region Export Commands
+
+    /// <summary>
+    /// Генерирует имя файла для экспорта на основе выбранных таблиц
+    /// </summary>
+    private string GenerateExportFileName(List<TableInfo> selectedTables)
     {
-        foreach (var table in Tables)
+        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+
+        if (selectedTables.Count == 1)
         {
-            table.IsSelected = false;
+            // Если выбрана только одна таблица: ИмяБазыДанных_ИмяТаблицы_ДатаВремя.sql
+            return $"{SelectedDatabase}_{selectedTables[0].Name}_{timestamp}.sql";
+        }
+        else
+        {
+            // Если таблиц несколько: ИмяБазыДанных_ДатаВремя.sql
+            return $"{SelectedDatabase}_{timestamp}.sql";
         }
     }
 
     [RelayCommand]
     private async Task ExportAsync()
     {
-        var selectedTables = Tables.Where(t => t.IsSelected).ToList();
+        if (_connectionConfig == null) return;
+
+        var selectedTables = FilteredTables
+            .Where(t => t.IsSelected)
+            .Select(t => t.GetTableInfo())
+            .ToList();
 
         if (selectedTables.Count == 0)
         {
@@ -291,9 +391,80 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
-        // Диалог сохранения файла (упрощенный вариант - используем текущую директорию)
-        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-        var outputPath = $"{SelectedDatabase}_{timestamp}.sql";
+        // Получаем последнюю использованную папку или текущую директорию
+        var lastDirectory = await _appSettingsService.LoadLastExportDirectoryAsync();
+        var defaultDirectory = string.IsNullOrEmpty(lastDirectory)
+            ? AppContext.BaseDirectory
+            : lastDirectory;
+
+        // Генерируем предложенное имя файла
+        var suggestedFileName = GenerateExportFileName(selectedTables);
+
+        // Открываем диалог сохранения файла
+        var topLevel = _window ?? (Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
+            ? desktop.MainWindow
+            : null);
+
+        if (topLevel == null)
+        {
+            StatusMessage = "✗ Не удалось открыть диалог сохранения файла";
+            return;
+        }
+
+        var saveDialog = new Avalonia.Platform.Storage.FilePickerSaveOptions
+        {
+            Title = "Сохранить экспорт",
+            SuggestedFileName = suggestedFileName,
+            DefaultExtension = "sql",
+            FileTypeChoices = new[]
+            {
+                new Avalonia.Platform.Storage.FilePickerFileType("SQL файлы")
+                {
+                    Patterns = new[] { "*.sql" }
+                },
+                new Avalonia.Platform.Storage.FilePickerFileType("Все файлы")
+                {
+                    Patterns = new[] { "*" }
+                }
+            }
+        };
+
+        // Устанавливаем начальную директорию
+        try
+        {
+            if (Directory.Exists(defaultDirectory))
+            {
+                var fullPath = Path.GetFullPath(defaultDirectory);
+                // Создаём URI в формате file:// (работает кроссплатформенно)
+                var directoryUri = new UriBuilder
+                {
+                    Scheme = "file",
+                    Host = string.Empty,
+                    Path = fullPath
+                }.Uri;
+
+                var folder = await topLevel.StorageProvider.TryGetFolderFromPathAsync(directoryUri);
+                if (folder != null)
+                {
+                    saveDialog.SuggestedStartLocation = folder;
+                }
+            }
+        }
+        catch
+        {
+            // Если не удалось установить начальную директорию, продолжаем без неё
+        }
+
+        var result = await topLevel.StorageProvider.SaveFilePickerAsync(saveDialog);
+
+        if (result == null)
+        {
+            // Пользователь отменил диалог
+            StatusMessage = "Экспорт отменен";
+            return;
+        }
+
+        var outputPath = result.Path.LocalPath;
 
         IsExporting = true;
         ExportProgress = 0;
@@ -301,7 +472,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
         try
         {
-            var config = GetConnectionConfig();
             var options = new ExportOptions
             {
                 OutputPath = outputPath,
@@ -318,15 +488,31 @@ public partial class MainWindowViewModel : ViewModelBase
                 ExportProgress = percent;
             });
 
-            var result = await _exportService.ExportAsync(config, options, progress);
-
-            if (result.Success)
+            var detailedProgress = new Progress<ExportProgress>(progressInfo =>
             {
-                StatusMessage = $"✓ Экспорт завершен: {result.TablesExported} таблиц, {result.RowsExported} строк. Файл: {result.OutputPath}";
+                CurrentTableName = progressInfo.CurrentTable;
+                CurrentTableRowsProcessed = progressInfo.RowsProcessed;
+                ElapsedTime = FormatElapsedTime(progressInfo.Elapsed);
+                ExportProgress = progressInfo.PercentComplete;
+                DetailedStatusMessage = progressInfo.StatusMessage;
+            });
+
+            var exportResult = await _exportService.ExportAsync(_connectionConfig, options, progress, detailedProgress);
+
+            if (exportResult.Success)
+            {
+                // Сохраняем папку для следующего экспорта
+                var exportDirectory = Path.GetDirectoryName(outputPath);
+                if (!string.IsNullOrEmpty(exportDirectory))
+                {
+                    await _appSettingsService.SaveLastExportDirectoryAsync(exportDirectory);
+                }
+
+                StatusMessage = $"✓ Экспорт завершен: {exportResult.TablesExported} таблиц, {exportResult.RowsExported:N0} строк. Файл: {exportResult.OutputPath}";
             }
             else
             {
-                StatusMessage = $"✗ Ошибка экспорта: {result.ErrorMessage}";
+                StatusMessage = $"✗ Ошибка экспорта: {exportResult.ErrorMessage}";
             }
         }
         catch (Exception ex)
@@ -337,6 +523,12 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             IsExporting = false;
             ExportProgress = 0;
+            CurrentTableName = string.Empty;
+            CurrentTableRowsProcessed = 0;
+            DetailedStatusMessage = string.Empty;
+            ElapsedTime = "00:00:00";
         }
     }
+
+    #endregion
 }

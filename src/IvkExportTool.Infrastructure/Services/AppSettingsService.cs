@@ -183,9 +183,59 @@ public class AppSettingsService : IAppSettingsService
         return SHA256.HashData(source);
     }
 
+    public async Task<string?> LoadLastExportDirectoryAsync()
+    {
+        if (!File.Exists(_settingsPath))
+        {
+            return null;
+        }
+
+        try
+        {
+            await using var stream = File.OpenRead(_settingsPath);
+            var settings = await JsonSerializer.DeserializeAsync<AppSettingsData>(stream, _jsonOptions);
+            return settings?.LastExportDirectory;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task SaveLastExportDirectoryAsync(string directory)
+    {
+        try
+        {
+            AppSettingsData? settings = null;
+
+            if (File.Exists(_settingsPath))
+            {
+                await using var readStream = File.OpenRead(_settingsPath);
+                settings = await JsonSerializer.DeserializeAsync<AppSettingsData>(readStream, _jsonOptions);
+            }
+
+            settings ??= new AppSettingsData();
+            settings.LastExportDirectory = directory;
+
+            var directoryPath = Path.GetDirectoryName(_settingsPath);
+            if (!string.IsNullOrEmpty(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+
+            await using var writeStream = File.Create(_settingsPath);
+            await JsonSerializer.SerializeAsync(writeStream, settings, _jsonOptions);
+        }
+        catch
+        {
+            // Игнорируем ошибки записи
+        }
+    }
+
     private class AppSettingsData
     {
         public ConnectionSettingsData? Connection { get; set; }
+        public string? LastExportDirectory { get; set; }
     }
 
     private class ConnectionSettingsData

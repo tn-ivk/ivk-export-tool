@@ -15,6 +15,7 @@ public class SqlExportService : IExportService
         ConnectionConfig config,
         ExportOptions options,
         IProgress<int>? progress = null,
+        IProgress<ExportProgress>? detailedProgress = null,
         CancellationToken cancellationToken = default)
     {
         var stopwatch = Stopwatch.StartNew();
@@ -26,7 +27,10 @@ public class SqlExportService : IExportService
             await connection.OpenAsync(cancellationToken);
 
             await using var fileStream = new FileStream(options.OutputPath, FileMode.Create, FileAccess.Write);
-            await using var writer = new StreamWriter(fileStream, Encoding.UTF8);
+            await using var writer = new StreamWriter(
+                fileStream,
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+                bufferSize: 64 * 1024); // 64KB буфер для оптимизации I/O
 
             // Заголовок SQL файла
             await writer.WriteLineAsync("-- MySQL Database Export");
@@ -34,23 +38,31 @@ public class SqlExportService : IExportService
             await writer.WriteLineAsync($"-- Database: {config.Database}");
             await writer.WriteLineAsync($"-- Export Date: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
             await writer.WriteLineAsync();
-            await writer.WriteLineAsync("SET NAMES utf8mb4;");
+            await writer.WriteLineAsync("SET NAMES utf8;");
             await writer.WriteLineAsync("SET FOREIGN_KEY_CHECKS = 0;");
             await writer.WriteLineAsync();
 
             var totalTables = options.Tables.Count;
-            var currentTable = 0;
+            var currentTableIndex = 0;
 
             foreach (var tableName in options.Tables)
             {
                 if (cancellationToken.IsCancellationRequested)
                     break;
 
-                await ExportTableAsync(connection, writer, tableName, options, cancellationToken);
+                var tableProgress = new ExportProgress
+                {
+                    CurrentTable = tableName,
+                    CurrentTableIndex = currentTableIndex,
+                    TotalTables = totalTables,
+                    Elapsed = stopwatch.Elapsed
+                };
+
+                await ExportTableAsync(connection, writer, tableName, options, tableProgress, detailedProgress, cancellationToken);
 
                 result.TablesExported++;
-                currentTable++;
-                progress?.Report((int)((double)currentTable / totalTables * 100));
+                currentTableIndex++;
+                progress?.Report((int)((double)currentTableIndex / totalTables * 100));
             }
 
             // Футер SQL файла
@@ -76,6 +88,8 @@ public class SqlExportService : IExportService
         StreamWriter writer,
         string tableName,
         ExportOptions options,
+        ExportProgress tableProgress,
+        IProgress<ExportProgress>? detailedProgress,
         CancellationToken cancellationToken)
     {
         await writer.WriteLineAsync($"-- ----------------------------");
@@ -110,7 +124,7 @@ public class SqlExportService : IExportService
             await writer.WriteLineAsync($"-- Records of {tableName}");
             await writer.WriteLineAsync($"-- ----------------------------");
 
-            await ExportTableDataAsync(connection, writer, tableName, options.BatchSize, cancellationToken);
+            await ExportTableDataAsync(connection, writer, tableName, options.BatchSize, tableProgress, detailedProgress, cancellationToken);
         }
 
         await writer.WriteLineAsync();
@@ -121,9 +135,32 @@ public class SqlExportService : IExportService
         StreamWriter writer,
         string tableName,
         int batchSize,
+        ExportProgress tableProgress,
+        IProgress<ExportProgress>? detailedProgress,
         CancellationToken cancellationToken)
     {
+        // 1) Посчитаем общее количество строк для корректного процента
+        await using (var countCommand = new MySqlCommand($"SELECT COUNT(*) FROM `{tableName}`", connection))
+        {
+            var totalRowsObj = await countCommand.ExecuteScalarAsync(cancellationToken);
+            if (totalRowsObj != null && totalRowsObj != DBNull.Value)
+            {
+                tableProgress.TotalRows = Convert.ToInt64(totalRowsObj);
+            }
+        }
+
+        // 2) Секундомер по текущей таблице для отображения ElapsedTime в UI
+        var tableStopwatch = Stopwatch.StartNew();
+
+        // 3) Начальный отчёт (0 строк), чтобы UI сразу показал активную таблицу
+        tableProgress.RowsProcessed = 0;
+        tableProgress.PercentComplete = CalculatePercent(tableProgress);
+        tableProgress.StatusMessage = $"Экспорт таблицы {tableName}: 0 строк";
+        tableProgress.Elapsed = tableStopwatch.Elapsed;
+        detailedProgress?.Report(tableProgress);
+
         await using var selectCommand = new MySqlCommand($"SELECT * FROM `{tableName}`", connection);
+        selectCommand.CommandTimeout = 3600; // 1 час для больших таблиц
         await using var reader = await selectCommand.ExecuteReaderAsync(cancellationToken);
 
         if (!reader.HasRows)
@@ -137,68 +174,174 @@ public class SqlExportService : IExportService
         }
 
         var insertHeader = $"INSERT INTO `{tableName}` ({string.Join(", ", columnNames.Select(c => $"`{c}`"))}) VALUES";
-        var rowCount = 0;
-        var batchRows = new List<string>();
+        var rowCount = 0L;
+        var currentBatchRow = 0;
+        const int progressReportInterval = 1000; // более частый отчёт каждые 1000 строк
 
         while (await reader.ReadAsync(cancellationToken))
         {
-            var values = new List<string>();
+            // Начало нового INSERT батча
+            if (currentBatchRow == 0)
+            {
+                if (rowCount > 0)
+                {
+                    await writer.WriteLineAsync(";");  // завершаем предыдущий INSERT
+                    await writer.WriteLineAsync();
+                }
+
+                await writer.WriteAsync(insertHeader);
+                await writer.WriteLineAsync();
+            }
+
+            // Запись строки напрямую в writer без промежуточного List
+            if (currentBatchRow > 0)
+            {
+                await writer.WriteLineAsync(",");
+            }
+
+            await writer.WriteAsync("(");
 
             for (int i = 0; i < columnCount; i++)
             {
+                if (i > 0)
+                {
+                    await writer.WriteAsync(", ");
+                }
+
                 if (reader.IsDBNull(i))
                 {
-                    values.Add("NULL");
+                    await writer.WriteAsync("NULL");
                 }
                 else
                 {
                     var value = reader.GetValue(i);
                     var sqlValue = ConvertToSqlValue(value);
-                    values.Add(sqlValue);
+                    await writer.WriteAsync(sqlValue);
                 }
             }
 
-            batchRows.Add($"({string.Join(", ", values)})");
-            rowCount++;
+            await writer.WriteAsync(")");
 
-            if (rowCount % batchSize == 0)
+            rowCount++;
+            currentBatchRow++;
+
+            if (currentBatchRow >= batchSize)
             {
-                await writer.WriteLineAsync($"{insertHeader}");
-                await writer.WriteLineAsync(string.Join(",\n", batchRows) + ";");
-                batchRows.Clear();
+                currentBatchRow = 0;
+            }
+
+            // Отчет о прогрессе каждые N строк
+            if (rowCount % progressReportInterval == 0)
+            {
+                tableProgress.RowsProcessed = rowCount;
+                tableProgress.Elapsed = tableStopwatch.Elapsed;
+                tableProgress.PercentComplete = CalculatePercent(tableProgress);
+                tableProgress.StatusMessage = $"Экспорт таблицы {tableName}: {rowCount:N0} строк";
+                detailedProgress?.Report(tableProgress);
             }
         }
 
-        // Записываем оставшиеся строки
-        if (batchRows.Count > 0)
+        // Финальный отчет о прогрессе
+        if (rowCount > 0)
         {
-            await writer.WriteLineAsync($"{insertHeader}");
-            await writer.WriteLineAsync(string.Join(",\n", batchRows) + ";");
+            tableProgress.RowsProcessed = rowCount;
+            tableProgress.Elapsed = tableStopwatch.Elapsed;
+            tableProgress.PercentComplete = CalculatePercent(tableProgress);
+            tableProgress.StatusMessage = $"Завершен экспорт таблицы {tableName}: {rowCount:N0} строк";
+            detailedProgress?.Report(tableProgress);
         }
+
+        // Завершаем последний INSERT если были строки
+        if (rowCount > 0)
+        {
+            await writer.WriteLineAsync(";");
+        }
+    }
+
+    private int CalculatePercent(ExportProgress progress)
+    {
+        if (progress.TotalTables == 0)
+            return 0;
+
+        // Процент = (завершенные таблицы + прогресс текущей таблицы) / общее количество таблиц * 100
+        var completedTables = progress.CurrentTableIndex;
+        var currentTableProgress = 0.0;
+
+        if (progress.TotalRows.HasValue && progress.TotalRows.Value > 0)
+        {
+            currentTableProgress = (double)progress.RowsProcessed / progress.TotalRows.Value;
+        }
+
+        var totalProgress = (completedTables + currentTableProgress) / progress.TotalTables;
+        return (int)(totalProgress * 100);
     }
 
     private string ConvertToSqlValue(object value)
     {
         return value switch
         {
-            string str => $"'{EscapeSqlString(str)}'",
+            string str => BuildEscapedString(str),
             DateTime dt => $"'{dt:yyyy-MM-dd HH:mm:ss}'",
             bool b => b ? "1" : "0",
-            byte[] bytes => $"0x{BitConverter.ToString(bytes).Replace("-", "")}",
+            byte[] bytes => BuildHexString(bytes),
             null => "NULL",
             _ => value.ToString() ?? "NULL"
         };
     }
 
-    private string EscapeSqlString(string value)
+    private string BuildEscapedString(string value)
     {
-        return value
-            .Replace("\\", "\\\\")
-            .Replace("'", "\\'")
-            .Replace("\"", "\\\"")
-            .Replace("\n", "\\n")
-            .Replace("\r", "\\r")
-            .Replace("\t", "\\t")
-            .Replace("\0", "\\0");
+        var sb = new StringBuilder(value.Length + 20);
+        sb.Append('\'');
+
+        foreach (var ch in value)
+        {
+            switch (ch)
+            {
+                case '\\':
+                    sb.Append("\\\\");
+                    break;
+                case '\'':
+                    sb.Append("\\'");
+                    break;
+                case '"':
+                    sb.Append("\\\"");
+                    break;
+                case '\n':
+                    sb.Append("\\n");
+                    break;
+                case '\r':
+                    sb.Append("\\r");
+                    break;
+                case '\t':
+                    sb.Append("\\t");
+                    break;
+                case '\0':
+                    sb.Append("\\0");
+                    break;
+                default:
+                    sb.Append(ch);
+                    break;
+            }
+        }
+
+        sb.Append('\'');
+        return sb.ToString();
+    }
+
+    private string BuildHexString(byte[] bytes)
+    {
+        if (bytes.Length == 0)
+            return "X''";
+
+        var sb = new StringBuilder(bytes.Length * 2 + 2);
+        sb.Append("0x");
+
+        foreach (var b in bytes)
+        {
+            sb.Append(b.ToString("X2"));
+        }
+
+        return sb.ToString();
     }
 }

@@ -17,5 +17,15 @@ public interface IAppSettingsService
     /// Сохраняет настройки подключения в хранилище.
     /// </summary>
     Task SaveConnectionAsync(ConnectionConfig config);
+
+    /// <summary>
+    /// Загружает путь к последней папке экспорта.
+    /// </summary>
+    Task<string?> LoadLastExportDirectoryAsync();
+
+    /// <summary>
+    /// Сохраняет путь к последней папке экспорта.
+    /// </summary>
+    Task SaveLastExportDirectoryAsync(string directory);
 }
 
