@@ -8,6 +8,19 @@
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
 
+  <!-- Оптимизации для уменьшения размера публикации -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <!-- IL Trimming - удаляет неиспользуемый код -->
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>link</TrimMode>
+
+    <!-- Компрессия single-file executable -->
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+
+    <!-- Оптимизация размера -->
+    <OptimizationPreference>Size</OptimizationPreference>
+  </PropertyGroup>
+
   <ItemGroup>
     <Folder Include="Models\" />
     <AvaloniaResource Include="Assets\**" />
