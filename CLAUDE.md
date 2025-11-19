@@ -226,6 +226,25 @@ dotnet publish src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj \
   -o ./publish/osx-x64
 ```
 
+### Оптимизации размера исполняемого файла
+
+В проекте включены оптимизации для уменьшения размера финальных релизов (см. `src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj:12-22`):
+
+**IL Trimming** - удаляет неиспользуемый код из сборок:
+- `PublishTrimmed=true` - включает trimming
+- `TrimMode=link` - агрессивный режим (удаляет неиспользуемые члены типов)
+
+**Компрессия Single-File** - сжимает содержимое исполняемого файла:
+- `EnableCompressionInSingleFile=true` - уменьшает размер на 10-20%
+
+**Оптимизация размера**:
+- `OptimizationPreference=Size` - приоритет на минимальный размер кода
+- `/p:StripSymbols=true` - удаляет отладочные символы (добавлено в CI/CD)
+
+Ожидаемый размер релиза: **~40-70 МБ** (вместо ~100 МБ без оптимизаций).
+
+**Важно**: Эти оптимизации применяются только для Release конфигурации и не влияют на Debug сборки.
+
 ## Соглашения о коде
 
 ### Стиль кода
