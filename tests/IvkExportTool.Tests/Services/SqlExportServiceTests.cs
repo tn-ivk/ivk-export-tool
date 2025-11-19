@@ -85,7 +85,7 @@ public class SqlExportServiceTests
         var result = InvokePrivateMethod<string>(service, "BuildHexString", bytes);
 
         // Assert
-        result.Should().Be("0x");
+        result.Should().Be("X''");
     }
 
     [Test]

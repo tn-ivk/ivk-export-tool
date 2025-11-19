@@ -3,13 +3,14 @@ name: Publish Release
 on:
   push:
     tags:
-      - 'v*.*.*'
-    branches:
-      - main
+      - '*.*.*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 env:
-  DOTNET_VERSION: '9.0.x'
+  DOTNET_VERSION: '10.0.x'
   PROJECT_PATH: 'src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj'
 
 jobs:
@@ -41,26 +42,19 @@ jobs:
       run: dotnet restore
 
     - name: Publish application
-      run: |
-        dotnet publish ${{ env.PROJECT_PATH }} \
-          --configuration Release \
-          --runtime ${{ matrix.runtime }} \
-          --self-contained true \
-          /p:PublishSingleFile=true \
-          /p:IncludeNativeLibrariesForSelfExtract=true \
-          /p:DebugType=None \
-          /p:DebugSymbols=false \
-          --output ./publish/${{ matrix.runtime }}
+      run: dotnet publish ${{ env.PROJECT_PATH }} --configuration Release --runtime ${{ matrix.runtime }} --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:DebugType=None /p:DebugSymbols=false /p:StripSymbols=true --output ./publish/${{ matrix.runtime }}
 
-    - name: Copy appsettings template (Linux)
+    - name: Rename executable and copy appsettings (Linux)
       if: matrix.runtime == 'linux-x64'
       run: |
-        cp src/IvkExportTool.Desktop/appsettings.template.json ./publish/${{ matrix.runtime }}/appsettings.json
+        mv ./publish/${{ matrix.runtime }}/IvkExportTool.Desktop ./publish/${{ matrix.runtime }}/IvkExportTool
+        cp src/IvkExportTool.Desktop/appsettings.json ./publish/${{ matrix.runtime }}/appsettings.json
 
-    - name: Copy appsettings template (Windows)
+    - name: Rename executable and copy appsettings (Windows)
       if: matrix.runtime == 'win-x64'
       run: |
-        Copy-Item src/IvkExportTool.Desktop/appsettings.template.json ./publish/${{ matrix.runtime }}/appsettings.json
+        Move-Item ./publish/${{ matrix.runtime }}/IvkExportTool.Desktop.exe ./publish/${{ matrix.runtime }}/IvkExportTool.exe
+        Copy-Item src/IvkExportTool.Desktop/appsettings.json ./publish/${{ matrix.runtime }}/appsettings.json
 
     - name: Create archive (Linux)
       if: matrix.archive-format == 'tar.gz'
