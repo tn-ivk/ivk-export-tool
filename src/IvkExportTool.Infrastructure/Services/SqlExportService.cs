@@ -58,7 +58,7 @@ public class SqlExportService : IExportService
                     Elapsed = stopwatch.Elapsed
                 };
 
-                await ExportTableAsync(connection, writer, tableName, options, tableProgress, detailedProgress, cancellationToken);
+                await ExportTableAsync(connection, writer, tableName, options, tableProgress, detailedProgress, stopwatch, cancellationToken);
 
                 result.TablesExported++;
                 currentTableIndex++;
@@ -90,6 +90,7 @@ public class SqlExportService : IExportService
         ExportOptions options,
         ExportProgress tableProgress,
         IProgress<ExportProgress>? detailedProgress,
+        Stopwatch stopwatch,
         CancellationToken cancellationToken)
     {
         await writer.WriteLineAsync($"-- ----------------------------");
@@ -124,7 +125,7 @@ public class SqlExportService : IExportService
             await writer.WriteLineAsync($"-- Records of {tableName}");
             await writer.WriteLineAsync($"-- ----------------------------");
 
-            await ExportTableDataAsync(connection, writer, tableName, options.BatchSize, tableProgress, detailedProgress, cancellationToken);
+            await ExportTableDataAsync(connection, writer, tableName, options.BatchSize, tableProgress, detailedProgress, stopwatch, cancellationToken);
         }
 
         await writer.WriteLineAsync();
@@ -137,6 +138,7 @@ public class SqlExportService : IExportService
         int batchSize,
         ExportProgress tableProgress,
         IProgress<ExportProgress>? detailedProgress,
+        Stopwatch stopwatch,
         CancellationToken cancellationToken)
     {
         // 1) Посчитаем общее количество строк для корректного процента
@@ -149,14 +151,11 @@ public class SqlExportService : IExportService
             }
         }
 
-        // 2) Секундомер по текущей таблице для отображения ElapsedTime в UI
-        var tableStopwatch = Stopwatch.StartNew();
-
-        // 3) Начальный отчёт (0 строк), чтобы UI сразу показал активную таблицу
+        // 2) Начальный отчёт (0 строк), чтобы UI сразу показал активную таблицу
         tableProgress.RowsProcessed = 0;
         tableProgress.PercentComplete = CalculatePercent(tableProgress);
         tableProgress.StatusMessage = $"Экспорт таблицы {tableName}: 0 строк";
-        tableProgress.Elapsed = tableStopwatch.Elapsed;
+        tableProgress.Elapsed = stopwatch.Elapsed;
         detailedProgress?.Report(tableProgress);
 
         await using var selectCommand = new MySqlCommand($"SELECT * FROM `{tableName}`", connection);
@@ -176,7 +175,8 @@ public class SqlExportService : IExportService
         var insertHeader = $"INSERT INTO `{tableName}` ({string.Join(", ", columnNames.Select(c => $"`{c}`"))}) VALUES";
         var rowCount = 0L;
         var currentBatchRow = 0;
-        const int progressReportInterval = 1000; // более частый отчёт каждые 1000 строк
+        var lastProgressUpdate = stopwatch.Elapsed;
+        const int progressUpdateIntervalMs = 1000; // обновление прогресса каждую секунду
 
         while (await reader.ReadAsync(cancellationToken))
         {
@@ -230,14 +230,16 @@ public class SqlExportService : IExportService
                 currentBatchRow = 0;
             }
 
-            // Отчет о прогрессе каждые N строк
-            if (rowCount % progressReportInterval == 0)
+            // Отчет о прогрессе каждую секунду
+            var elapsed = stopwatch.Elapsed;
+            if ((elapsed - lastProgressUpdate).TotalMilliseconds >= progressUpdateIntervalMs)
             {
                 tableProgress.RowsProcessed = rowCount;
-                tableProgress.Elapsed = tableStopwatch.Elapsed;
+                tableProgress.Elapsed = elapsed;
                 tableProgress.PercentComplete = CalculatePercent(tableProgress);
                 tableProgress.StatusMessage = $"Экспорт таблицы {tableName}: {rowCount:N0} строк";
                 detailedProgress?.Report(tableProgress);
+                lastProgressUpdate = elapsed;
             }
         }
 
@@ -245,7 +247,7 @@ public class SqlExportService : IExportService
         if (rowCount > 0)
         {
             tableProgress.RowsProcessed = rowCount;
-            tableProgress.Elapsed = tableStopwatch.Elapsed;
+            tableProgress.Elapsed = stopwatch.Elapsed;
             tableProgress.PercentComplete = CalculatePercent(tableProgress);
             tableProgress.StatusMessage = $"Завершен экспорт таблицы {tableName}: {rowCount:N0} строк";
             detailedProgress?.Report(tableProgress);
