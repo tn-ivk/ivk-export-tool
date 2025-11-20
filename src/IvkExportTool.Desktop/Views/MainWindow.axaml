@@ -216,16 +216,6 @@
                 CornerRadius="8 8 0 0">
           <Grid ColumnDefinitions="*,Auto">
             <StackPanel Grid.Column="0" Spacing="4">
-              <!-- Текущая таблица и строки -->
-              <TextBlock FontSize="13" FontWeight="Medium">
-                <Run Text="Таблица:"/>
-                <Run Text="{Binding CurrentTableName}"
-                     Foreground="{StaticResource PrimaryBrush}"/>
-                <Run Text="•"/>
-                <Run Text="{Binding CurrentTableRowsProcessed, StringFormat='{}{0:N0}'}"/>
-                <Run Text="строк"/>
-              </TextBlock>
-
               <!-- Детальное сообщение о статусе -->
               <TextBlock Text="{Binding DetailedStatusMessage}"
                          FontSize="12"
@@ -241,18 +231,16 @@
             </StackPanel>
 
             <!-- Прошедшее время -->
-            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="16,0,0,0">
-              <TextBlock Text="Время"
-                         FontSize="11"
-                         Foreground="{StaticResource OnSurfaceVariantBrush}"
-                         HorizontalAlignment="Center"/>
-              <TextBlock Text="{Binding ElapsedTime}"
-                         FontSize="14"
-                         FontWeight="SemiBold"
-                         FontFamily="Consolas"
-                         Foreground="{StaticResource PrimaryBrush}"
-                         HorizontalAlignment="Center"/>
-            </StackPanel>
+            <TextBlock Grid.Column="1"
+                       VerticalAlignment="Center"
+                       Margin="16,0,0,0"
+                       FontSize="13"
+                       FontWeight="SemiBold"
+                       FontFamily="Consolas"
+                       Foreground="{StaticResource PrimaryBrush}">
+              <Run Text="Время"/>
+              <Run Text="{Binding ElapsedTime}"/>
+            </TextBlock>
           </Grid>
         </Border>
 
