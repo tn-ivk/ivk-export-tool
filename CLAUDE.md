@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Технологический стек
 
-- **.NET 9.0** (SDK 9.0.111)
+- **.NET 10.0** (SDK 10.0.0)
 - **Avalonia UI 11.3.8** - кроссплатформенный GUI фреймворк
 - **MySqlConnector 2.4.0** - подключение к MySQL базам данных
 - **CommunityToolkit.Mvvm 8.2.1** - MVVM паттерн
@@ -126,7 +126,7 @@ ViewModels получают зависимости через конструкт
 ### Конфигурационные файлы
 
 - **`Directory.Build.props`** - общие настройки для всех проектов (LangVersion, Nullable, метаданные)
-- **`global.json`** - версия .NET SDK (9.0.0)
+- **`global.json`** - версия .NET SDK (10.0.0)
 - **`.editorconfig`** - правила форматирования кода (отступы, стиль C#)
 - **`IvkExportTool.sln`** - файл решения со всеми проектами
 
@@ -307,7 +307,7 @@ git push origin v1.0.0
 ## Ключевые зависимости
 
 ### Core проект
-- Не имеет внешних зависимостей (только .NET 9.0)
+- Не имеет внешних зависимостей (только .NET 10.0)
 
 ### Infrastructure проект
 - `MySqlConnector` 2.4.0 - подключение к MySQL
