@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -84,6 +85,16 @@ public partial class MainWindowViewModel : ViewModelBase
     public SolidColorBrush ConnectionStatusColor => _connectionConfig != null
         ? new SolidColorBrush(Color.Parse("#4caf50"))  // Success green
         : new SolidColorBrush(Color.Parse("#f44336")); // Error red
+
+    public string WindowTitle
+    {
+        get
+        {
+            var version = Assembly.GetExecutingAssembly().GetName().Version;
+            var versionString = version != null ? $"v{version.Major}.{version.Minor}.{version.Build}" : "v0.0.0";
+            return $"IvkExportTool {versionString} - Подключение к БД ИВК";
+        }
+    }
 
     public bool HasSelectedTables => SelectedCount > 0;
 

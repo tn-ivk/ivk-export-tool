@@ -7,7 +7,7 @@
         x:Class="IvkExportTool.Desktop.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/Transneft.ico"
-        Title="IvkExportTool - Подключение к БД ИВК"
+        Title="{Binding WindowTitle}"
         Width="1200" Height="800"
         MinWidth="600" MinHeight="400"
         Background="{DynamicResource SurfaceBrush}">
