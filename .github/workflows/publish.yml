@@ -59,14 +59,14 @@ jobs:
     - name: Create archive (Linux)
       if: matrix.archive-format == 'tar.gz'
       run: |
-        cd ./publish
-        tar -czf ${{ matrix.artifact-name }}.tar.gz ${{ matrix.runtime }}
+        cd ./publish/${{ matrix.runtime }}
+        tar -czf ../${{ matrix.artifact-name }}.tar.gz *
 
     - name: Create archive (Windows)
       if: matrix.archive-format == 'zip'
       run: |
-        cd ./publish
-        Compress-Archive -Path ${{ matrix.runtime }} -DestinationPath ${{ matrix.artifact-name }}.zip
+        cd ./publish/${{ matrix.runtime }}
+        Compress-Archive -Path * -DestinationPath ../${{ matrix.artifact-name }}.zip
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
