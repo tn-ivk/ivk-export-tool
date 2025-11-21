@@ -72,6 +72,13 @@ IvkExportTool/
 - По умолчанию (при первом запуске) используется текущая директория приложения
 - Настройки сохраняются в `appsettings.json` в поле `LastExportDirectory`
 
+**Таймер и прогресс экспорта**:
+- Общий таймер показывает время экспорта всех выбранных таблиц
+- Обновление прогресса происходит каждую секунду (по времени, а не по количеству строк)
+- Общий `Stopwatch` передается через всю цепочку методов экспорта в `SqlExportService` (см. `src/IvkExportTool.Infrastructure/Services/SqlExportService.cs:20-60`)
+- UI показывает упрощенную строку состояния: детальное сообщение и время в одной строке
+- Убрана информация о текущей таблице и количестве обработанных строк для упрощения интерфейса
+
 ### Dependency Injection
 
 Приложение использует Microsoft.Extensions.DependencyInjection для управления зависимостями. Конфигурация происходит в `App.axaml.cs` (см. `src/IvkExportTool.Desktop/App.axaml.cs:31-45`):
@@ -122,6 +129,30 @@ ViewModels получают зависимости через конструкт
 - `DeselectAllCommand` - снятие выбора со всех таблиц
 
 Автоматическое обновление: при изменении `IsSelected` у любой `TableItemViewModel` вызывается `UpdateSelectionState()`, который пересчитывает состояние чекбокса в заголовке.
+
+#### Версионирование приложения
+
+Версия приложения отображается в заголовке главного окна через свойство `WindowTitle` в `MainWindowViewModel` (см. `src/IvkExportTool.Desktop/ViewModels/MainWindowViewModel.cs:89-97`):
+
+- **Источник версии**: извлекается из `Assembly.GetExecutingAssembly().GetName().Version`
+- **Формат отображения**: `IvkExportTool v{Major}.{Minor}.{Build} - Подключение к БД ИВК`
+- **Значение по умолчанию**: `v0.0.0` (если версия не установлена)
+- **Установка версии в CI/CD**: версия устанавливается при сборке релиза через параметры `/p:Version`, `/p:AssemblyVersion`, `/p:FileVersion`
+- **Источник версии для релизов**: извлекается из git-тега (например, тег `v1.0.0` → версия `1.0.0`)
+- **Версия для dev-сборок**: `0.0.0-dev` (при сборке без тега)
+
+Реализация:
+```csharp
+public string WindowTitle
+{
+    get
+    {
+        var version = Assembly.GetExecutingAssembly().GetName().Version;
+        var versionString = version != null ? $"v{version.Major}.{version.Minor}.{version.Build}" : "v0.0.0";
+        return $"IvkExportTool {versionString} - Подключение к БД ИВК";
+    }
+}
+```
 
 ### Конфигурационные файлы
 
@@ -303,6 +334,28 @@ git tag -a v1.0.0 -m "Release version 1.0.0"
 git push origin v1.0.0
 # GitHub Actions автоматически создаст релиз с артефактами для Windows и Linux
 ```
+
+### Процесс публикации релиза
+
+**Извлечение версии** (см. `.github/workflows/publish.yml:36-48`):
+- Версия извлекается из git-тега автоматически: `VERSION="${GITHUB_REF#refs/tags/}"`
+- Если запуск без тега (например, через `workflow_dispatch`), используется версия `0.0.0-dev`
+- Версия передается в процесс сборки через параметры `/p:Version`, `/p:AssemblyVersion`, `/p:FileVersion`
+
+**Структура релизных архивов**:
+- Архивы содержат исполняемый файл **сразу в корне**
+- Нет вложенных директорий типа `runtime/` - пользователь может сразу запустить приложение после распаковки
+- Включены файлы:
+  - `IvkExportTool.exe` (Windows) или `IvkExportTool` (Linux)
+  - `appsettings.json` - конфигурация приложения
+
+**Форматы архивов**:
+- Windows: `.zip` архив (создается через `Compress-Archive`)
+- Linux: `.tar.gz` архив (создается через `tar -czf`)
+
+**Именование артефактов**:
+- Windows: `IvkExportTool-win-x64.zip`
+- Linux: `IvkExportTool-linux-x64.tar.gz`
 
 ## Ключевые зависимости
 
