@@ -90,18 +90,89 @@ services.AddSingleton<IDatabaseService, MySqlDatabaseService>();
 services.AddSingleton<IExportService, SqlExportService>();
 
 // Регистрация ViewModels
+services.AddTransient<StartWindowViewModel>();
 services.AddTransient<ConnectionWindowViewModel>();
+services.AddTransient<AutoConnectionWindowViewModel>();
 services.AddTransient<MainWindowViewModel>();
 ```
 
 ViewModels получают зависимости через конструктор. Сервисы регистрируются как Singleton, ViewModels как Transient.
 
-**Важная архитектурная особенность**: Приложение имеет два окна (ConnectionWindow и MainWindow), которые переключаются друг на друга с сохранением позиции на том же мониторе. При смене подключения главное окно закрывается и открывается окно подключения. Логика переключения окон реализована в `App.axaml.cs`.
+### Система окон и навигация
+
+Приложение использует систему из четырех окон с интеллектуальной навигацией:
+
+#### Окна приложения
+
+1. **StartWindow** (460x360) - стартовое окно выбора способа подключения
+   - Две большие кнопки: "Ручная настройка подключения" и "Автоподключение"
+   - События: `ManualConnectionRequested`, `AutoConnectionRequested`
+   - ViewModel: `StartWindowViewModel`
+
+2. **ConnectionWindow** (460x360) - окно ручной настройки подключения
+   - Поля ввода: хост, порт, логин, пароль
+   - Кнопки: "Тест подключения", "Подключиться"
+   - Кнопка возврата на стартовое окно (слева от крестика)
+   - События: `ConnectionSucceeded`, `BackRequested`
+   - ViewModel: `ConnectionWindowViewModel`
+   - Заголовок: "Подключение к БД ИВК"
+
+3. **AutoConnectionWindow** (460x360) - окно автоподключения
+   - Статус подключения и индикатор загрузки
+   - Кнопки: "Отмена", "Автоподключиться"
+   - Кнопка возврата на стартовое окно (слева от крестика)
+   - События: `ConnectionSucceeded`, `BackRequested`
+   - ViewModel: `AutoConnectionWindowViewModel`
+   - Заголовок: "Автоподключение к БД ИВК"
+
+4. **MainWindow** - главное окно работы с базой данных
+   - Список баз данных и таблиц
+   - Экспорт выбранных таблиц
+   - Смена подключения через меню
+   - ViewModel: `MainWindowViewModel`
+
+#### Схема навигации
+
+```
+StartWindow (выбор способа подключения)
+    ├─> ConnectionWindow (ручное подключение) ─┐
+    └─> AutoConnectionWindow (автоподключение) ─┤
+                                                 ├─> MainWindow (работа с БД)
+                                                 │
+                                    [Смена подключения] ──> StartWindow
+```
+
+#### Логика переключения окон
+
+Реализована в `App.axaml.cs` (см. `src/IvkExportTool.Desktop/App.axaml.cs:67-272`):
+
+**Методы навигации**:
+- `ShowStartWindow()` - показывает стартовое окно выбора способа подключения
+- `ShowConnectionWindow()` - показывает окно ручной настройки подключения
+- `ShowAutoConnectionWindow()` - показывает окно автоподключения
+- `SaveCurrentWindowPosition()` - сохраняет позицию любого активного окна
+- `CloseAllWindows()` - закрывает все окна подключения (кроме MainWindow)
+- `RestoreWindowPositionOnSameScreen()` - восстанавливает позицию окна на том же мониторе
+
+**Обработчики событий**:
+- `OnManualConnectionRequested` - переход на окно ручного подключения
+- `OnAutoConnectionRequested` - переход на окно автоподключения
+- `OnBackFromConnectionRequested` - возврат со страницы ручного подключения на стартовое окно
+- `OnBackFromAutoConnectionRequested` - возврат со страницы автоподключения на стартовое окно
+- `OnConnectionSucceeded` - успешное подключение (переход на главное окно)
+- `OnChangeConnectionRequested` - смена подключения из главного окна (возврат на стартовое окно)
+
+**Особенности реализации**:
+- Все окна открываются на том же мониторе с сохранением центральной позиции
+- При переключении окон старое закрывается только ПОСЛЕ открытия нового для плавного перехода
+- Позиция окна сохраняется в `_lastWindowPosition` и восстанавливается через `RestoreWindowPositionOnSameScreen()`
+- Используется `WindowStartupLocation = WindowStartupLocation.Manual` для ручного позиционирования
 
 **Коммуникация между ViewModels**:
-- `ConnectionWindowViewModel.ConnectionSucceeded` - событие успешного подключения к БД (передаёт ConnectionConfig)
-- `MainWindowViewModel.ChangeConnectionRequested` - событие запроса смены подключения
-- `SaveWindowPosition()` и `RestoreWindowPositionOnSameScreen()` в `App.axaml.cs:177-214` обеспечивают сохранение позиции окна при переключении между окнами на том же мониторе
+- `StartWindowViewModel.ManualConnectionRequested` / `AutoConnectionRequested` - выбор типа подключения
+- `ConnectionWindowViewModel.ConnectionSucceeded` / `BackRequested` - результат ручного подключения
+- `AutoConnectionWindowViewModel.ConnectionSucceeded` / `BackRequested` - результат автоподключения
+- `MainWindowViewModel.ChangeConnectionRequested` - запрос смены подключения
 
 ### UI Модели и паттерны
 

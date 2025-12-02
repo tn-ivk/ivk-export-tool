@@ -41,6 +41,7 @@ public partial class ConnectionWindowViewModel : ViewModelBase
     // События
     public event EventHandler<ConnectionConfig>? ConnectionSucceeded;
     public event EventHandler<NotificationRequestedEventArgs>? NotificationRequested;
+    public event EventHandler? BackRequested;
 
     public ConnectionWindowViewModel() : this(null!, null!)
     {
@@ -232,5 +233,11 @@ public partial class ConnectionWindowViewModel : ViewModelBase
         {
             IsLoading = false;
         }
+    }
+
+    [RelayCommand]
+    private void Back()
+    {
+        BackRequested?.Invoke(this, EventArgs.Empty);
     }
 }

@@ -34,6 +34,13 @@ public partial class ConnectionWindow : Window
         {
             closeButton.Click += OnCloseButtonClick;
         }
+
+        // Настройка кнопки возврата
+        var backButton = this.FindControl<Button>("BackButton");
+        if (backButton != null)
+        {
+            backButton.Click += OnBackButtonClick;
+        }
     }
 
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -50,6 +57,15 @@ public partial class ConnectionWindow : Window
         if (Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.Shutdown();
+        }
+    }
+
+    private void OnBackButtonClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        // Вызываем команду возврата в ViewModel
+        if (_viewModel is not null)
+        {
+            _viewModel.BackCommand.Execute(null);
         }
     }
 
@@ -128,6 +144,13 @@ public partial class ConnectionWindow : Window
         if (closeButton != null)
         {
             closeButton.Click -= OnCloseButtonClick;
+        }
+
+        // Отписываемся от кнопки возврата
+        var backButton = this.FindControl<Button>("BackButton");
+        if (backButton != null)
+        {
+            backButton.Click -= OnBackButtonClick;
         }
 
         // Отписываемся при закрытии окна

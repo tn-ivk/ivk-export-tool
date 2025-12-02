@@ -4,10 +4,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
-        x:Class="IvkExportTool.Desktop.Views.ConnectionWindow"
-        x:DataType="vm:ConnectionWindowViewModel"
+        x:Class="IvkExportTool.Desktop.Views.AutoConnectionWindow"
+        x:DataType="vm:AutoConnectionWindowViewModel"
         Icon="/Assets/Transneft.ico"
-        Title="IvkExportTool - Подключение к БД ИВК"
+        Title="IvkExportTool - Автоподключение к БД ИВК"
         Width="460" Height="360"
         MinWidth="460" MinHeight="360"
         WindowStartupLocation="CenterScreen"
@@ -18,7 +18,7 @@
         ExtendClientAreaToDecorationsHint="True">
 
   <Design.DataContext>
-    <vm:ConnectionWindowViewModel/>
+    <vm:AutoConnectionWindowViewModel/>
   </Design.DataContext>
 
   <Grid>
@@ -39,7 +39,7 @@
                 Padding="20,12">
           <Grid ColumnDefinitions="*,Auto,Auto">
             <TextBlock Grid.Column="0"
-                       Text="Подключение к БД ИВК"
+                       Text="Автоподключение к базе данных ИВК"
                        Classes="h4"
                        Foreground="{StaticResource TextPrimaryBrush}"
                        VerticalAlignment="Center"/>
@@ -78,63 +78,33 @@
                     Spacing="20"
                     Margin="24,20,24,24">
 
-          <!-- Параметры подключения -->
-          <Grid ColumnDefinitions="100,*" RowDefinitions="Auto,Auto,Auto,Auto">
-            <!-- Host -->
-            <TextBlock Grid.Row="0" Grid.Column="0"
-                       Text="Хост:"
-                       Classes="label"
-                       VerticalAlignment="Center"
-                       Margin="0,0,12,12"/>
-            <TextBox Grid.Row="0" Grid.Column="1"
-                     Text="{Binding Host}"
-                     Watermark="localhost или IP адрес"
-                     Margin="0,0,0,12"/>
+          <!-- Информация о статусе -->
+          <Border Background="{StaticResource SurfaceBrush}"
+                  CornerRadius="{StaticResource RadiusMedium}"
+                  Padding="16">
+            <StackPanel Spacing="12">
+              <TextBlock Text="{Binding StatusMessage}"
+                         Classes="body"
+                         Foreground="{StaticResource TextPrimaryBrush}"
+                         TextWrapping="Wrap"/>
 
-            <!-- Port -->
-            <TextBlock Grid.Row="1" Grid.Column="0"
-                       Text="Порт:"
-                       Classes="label"
-                       VerticalAlignment="Center"
-                       Margin="0,0,12,12"/>
-            <TextBox Grid.Row="1" Grid.Column="1"
-                     Text="{Binding Port}"
-                     Watermark="3306"
-                     Margin="0,0,0,12"/>
-
-            <!-- Username -->
-            <TextBlock Grid.Row="2" Grid.Column="0"
-                       Text="Логин:"
-                       Classes="label"
-                       VerticalAlignment="Center"
-                       Margin="0,0,12,12"/>
-            <TextBox Grid.Row="2" Grid.Column="1"
-                     Text="{Binding Username}"
-                     Watermark="root"
-                     Margin="0,0,0,12"/>
-
-            <!-- Password -->
-            <TextBlock Grid.Row="3" Grid.Column="0"
-                       Text="Пароль:"
-                       Classes="label"
-                       VerticalAlignment="Center"
-                       Margin="0,0,12,0"/>
-            <TextBox Grid.Row="3" Grid.Column="1"
-                     Text="{Binding Password}"
-                     PasswordChar="●"
-                     Watermark="password"/>
-          </Grid>
+              <!-- Индикатор загрузки -->
+              <ProgressBar IsIndeterminate="{Binding IsLoading}"
+                           IsVisible="{Binding IsLoading}"
+                           Height="4"/>
+            </StackPanel>
+          </Border>
 
           <!-- Кнопки -->
           <Grid ColumnDefinitions="*,*" Margin="0,4,0,0">
             <Button Grid.Column="0"
                     Classes="secondary"
-                    Command="{Binding TestConnectionCommand}"
+                    Command="{Binding CancelCommand}"
                     IsEnabled="{Binding !IsLoading}"
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
                     Margin="0,0,8,0"
-                    Content="Тест подключения" />
+                    Content="Отмена" />
 
             <Button Grid.Column="1"
                     Classes="primary"
@@ -143,7 +113,7 @@
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
                     Margin="8,0,0,0"
-                    Content="Подключиться" />
+                    Content="Автоподключиться" />
           </Grid>
 
         </StackPanel>
