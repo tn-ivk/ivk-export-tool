@@ -8,35 +8,64 @@
         x:DataType="vm:ConnectionWindowViewModel"
         Icon="/Assets/Transneft.ico"
         Title="IvkExportTool - Подключение к БД ИВК"
-        Width="500" Height="360"
-        MinWidth="500" MinHeight="360"
+        Width="460" Height="380"
+        MinWidth="460" MinHeight="380"
         WindowStartupLocation="CenterScreen"
-        CanResize="True"
-        Background="{DynamicResource SurfaceBrush}">
+        CanResize="False"
+        SystemDecorations="None"
+        TransparencyLevelHint="Transparent"
+        Background="Transparent"
+        ExtendClientAreaToDecorationsHint="True">
 
   <Design.DataContext>
     <vm:ConnectionWindowViewModel/>
   </Design.DataContext>
 
   <Grid>
-    <!-- Слой основного контента -->
-    <Border Classes="card"
-            HorizontalAlignment="Stretch"
-            VerticalAlignment="Stretch"
-            Margin="20">
-      <StackPanel Spacing="24">
+    <!-- Основная карточка окна -->
+    <Border CornerRadius="{StaticResource RadiusXLarge}"
+            Background="{StaticResource BackgroundBrush}"
+            BoxShadow="0 4 24 0 #40000000"
+            Margin="16"
+            ClipToBounds="True">
 
-        <!-- Заголовок -->
-        <StackPanel Spacing="8" HorizontalAlignment="Center">
-          <TextBlock Text="Подключение к базе данных ИВК"
-                     Classes="h3"
-                     Foreground="{StaticResource TextSecondaryBrush}"
-                     HorizontalAlignment="Center"/>
-        </StackPanel>
+      <Grid RowDefinitions="Auto,*">
 
-        <!-- Параметры подключения -->
-        <StackPanel Spacing="16">
-          <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto">
+        <!-- Заголовок с кнопкой закрытия (drag area) -->
+        <Border Grid.Row="0"
+                x:Name="TitleBar"
+                Background="{StaticResource SurfaceVariantBrush}"
+                CornerRadius="12,12,0,0"
+                Padding="20,12">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Grid.Column="0"
+                       Text="Подключение к базе данных ИВК"
+                       Classes="h4"
+                       Foreground="{StaticResource TextPrimaryBrush}"
+                       VerticalAlignment="Center"/>
+
+            <!-- Кнопка закрытия -->
+            <Button Grid.Column="1"
+                    x:Name="CloseButton"
+                    Classes="window-close-button"
+                    Width="28"
+                    Height="28"
+                    Padding="0"
+                    ToolTip.Tip="Закрыть приложение">
+              <PathIcon Data="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"
+                        Width="14"
+                        Height="14"/>
+            </Button>
+          </Grid>
+        </Border>
+
+        <!-- Контент формы -->
+        <StackPanel Grid.Row="1"
+                    Spacing="20"
+                    Margin="24,20,24,24">
+
+          <!-- Параметры подключения -->
+          <Grid ColumnDefinitions="100,*" RowDefinitions="Auto,Auto,Auto,Auto">
             <!-- Host -->
             <TextBlock Grid.Row="0" Grid.Column="0"
                        Text="Хост:"
@@ -81,33 +110,33 @@
                      PasswordChar="●"
                      Watermark="password"/>
           </Grid>
+
+          <!-- Кнопки -->
+          <Grid ColumnDefinitions="*,*" Margin="0,4,0,0">
+            <Button Grid.Column="0"
+                    Classes="secondary"
+                    Command="{Binding TestConnectionCommand}"
+                    IsEnabled="{Binding !IsLoading}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Margin="0,0,8,0"
+                    Content="Тест подключения" />
+
+            <Button Grid.Column="1"
+                    Classes="primary"
+                    Command="{Binding ConnectCommand}"
+                    IsEnabled="{Binding !IsLoading}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Margin="8,0,0,0"
+                    Content="Подключиться" />
+          </Grid>
+
         </StackPanel>
-
-        <!-- Кнопки -->
-        <Grid ColumnDefinitions="*,*">
-          <Button Grid.Column="0"
-                  Classes="secondary"
-                  Command="{Binding TestConnectionCommand}"
-                  IsEnabled="{Binding !IsLoading}"
-                  HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center"
-                  Margin="0,0,6,0"
-                  Content="Тест подключения" />
-
-          <Button Grid.Column="1"
-                  Classes="primary"
-                  Command="{Binding ConnectCommand}"
-                  IsEnabled="{Binding !IsLoading}"
-                  HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center"
-                  Margin="6,0,0,0"
-                  Content="Подключиться" />
-        </Grid>
-
-      </StackPanel>
+      </Grid>
     </Border>
 
-    <!-- Слой для уведомлений (не влияет на layout основного контента) -->
+    <!-- Слой для уведомлений -->
     <Panel x:Name="NotificationPanel" />
   </Grid>
 </Window>
