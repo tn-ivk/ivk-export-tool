@@ -71,9 +71,6 @@ public partial class App : Application
         // Сохраняем позицию текущего окна
         SaveCurrentWindowPosition();
 
-        // Закрываем старые окна перед созданием нового
-        CloseAllWindows();
-
         var viewModel = Services.GetRequiredService<StartWindowViewModel>();
 
         _startWindow = new StartWindow
@@ -92,8 +89,12 @@ public partial class App : Application
             RestoreWindowPositionOnSameScreen(_startWindow);
         };
 
+        // Устанавливаем новое окно как главное ДО закрытия старого
         _desktop.MainWindow = _startWindow;
         _startWindow.Show();
+
+        // Закрываем старые окна ПОСЛЕ установки нового главного окна (кроме текущего)
+        CloseAllWindows(_startWindow);
     }
 
     private void OnManualConnectionRequested(object? sender, EventArgs e)
@@ -113,9 +114,6 @@ public partial class App : Application
         // Сохраняем позицию текущего окна
         SaveCurrentWindowPosition();
 
-        // Закрываем старые окна перед созданием нового
-        CloseAllWindows();
-
         var viewModel = Services.GetRequiredService<ConnectionWindowViewModel>();
 
         _connectionWindow = new ConnectionWindow
@@ -134,8 +132,12 @@ public partial class App : Application
             RestoreWindowPositionOnSameScreen(_connectionWindow);
         };
 
+        // Устанавливаем новое окно как главное ДО закрытия старого
         _desktop.MainWindow = _connectionWindow;
         _connectionWindow.Show();
+
+        // Закрываем старые окна ПОСЛЕ установки нового главного окна (кроме текущего)
+        CloseAllWindows(_connectionWindow);
     }
 
     private void ShowAutoConnectionWindow()
@@ -144,9 +146,6 @@ public partial class App : Application
 
         // Сохраняем позицию текущего окна
         SaveCurrentWindowPosition();
-
-        // Закрываем старые окна перед созданием нового
-        CloseAllWindows();
 
         var viewModel = Services.GetRequiredService<AutoConnectionWindowViewModel>();
 
@@ -166,8 +165,12 @@ public partial class App : Application
             RestoreWindowPositionOnSameScreen(_autoConnectionWindow);
         };
 
+        // Устанавливаем новое окно как главное ДО закрытия старого
         _desktop.MainWindow = _autoConnectionWindow;
         _autoConnectionWindow.Show();
+
+        // Закрываем старые окна ПОСЛЕ установки нового главного окна (кроме текущего)
+        CloseAllWindows(_autoConnectionWindow);
     }
 
     private void OnBackFromConnectionRequested(object? sender, EventArgs e)
@@ -200,16 +203,25 @@ public partial class App : Application
         }
     }
 
-    private void CloseAllWindows()
+    private void CloseAllWindows(Window? except = null)
     {
-        _startWindow?.Close();
-        _startWindow = null;
+        if (_startWindow != null && _startWindow != except)
+        {
+            _startWindow.Close();
+            _startWindow = null;
+        }
 
-        _connectionWindow?.Close();
-        _connectionWindow = null;
+        if (_connectionWindow != null && _connectionWindow != except)
+        {
+            _connectionWindow.Close();
+            _connectionWindow = null;
+        }
 
-        _autoConnectionWindow?.Close();
-        _autoConnectionWindow = null;
+        if (_autoConnectionWindow != null && _autoConnectionWindow != except)
+        {
+            _autoConnectionWindow.Close();
+            _autoConnectionWindow = null;
+        }
 
         // Главное окно не закрываем здесь
     }

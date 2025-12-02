@@ -52,10 +52,11 @@
                     Height="28"
                     Padding="0"
                     Margin="0,0,8,0"
+                    Background="Transparent"
                     ToolTip.Tip="Вернуться к выбору способа подключения">
-              <PathIcon Data="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"
-                        Width="14"
-                        Height="14"/>
+              <PathIcon Data="M11,9L12.41,10.41L8.83,14H18V20H20V12H8.83L12.41,8.41L11,7L5,13L11,19V9Z"
+                        Width="16"
+                        Height="16"/>
             </Button>
 
             <!-- Кнопка закрытия -->
