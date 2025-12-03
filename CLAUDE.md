@@ -435,6 +435,7 @@ git push origin v1.0.0
 
 ### Infrastructure проект
 - `MySqlConnector` 2.4.0 - подключение к MySQL
+- `System.Security.Cryptography.ProtectedData` 8.0.0 - защищённое хранение данных
 
 ### Desktop проект
 - `Avalonia` 11.3.8 - UI фреймворк
@@ -443,6 +444,7 @@ git push origin v1.0.0
 - `Avalonia.Controls.DataGrid` 11.3.8 - таблица данных
 - `Avalonia.Fonts.Inter` 11.3.8 - шрифт Inter
 - `CommunityToolkit.Mvvm` 8.2.1 - MVVM паттерн
+- `Material.Icons.Avalonia` 2.4.1 - Material Design иконки
 - `Microsoft.Extensions.DependencyInjection` 9.0.10 - DI контейнер
 - `Microsoft.Extensions.Configuration.Json` 9.0.10 - конфигурация
 
