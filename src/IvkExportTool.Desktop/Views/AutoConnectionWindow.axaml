@@ -3,6 +3,7 @@
         xmlns:vm="using:IvkExportTool.Desktop.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:i="https://github.com/projektanker/icons.avalonia"
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
         x:Class="IvkExportTool.Desktop.Views.AutoConnectionWindow"
         x:DataType="vm:AutoConnectionWindowViewModel"
@@ -39,7 +40,7 @@
                 Padding="20,12">
           <Grid ColumnDefinitions="*,Auto,Auto">
             <TextBlock Grid.Column="0"
-                       Text="Автоподключение к базе данных ИВК"
+                       Text="Автоподключение к БД ИВК"
                        Classes="h4"
                        Foreground="{StaticResource TextPrimaryBrush}"
                        VerticalAlignment="Center"/>
@@ -54,9 +55,8 @@
                     Margin="0,0,8,0"
                     Background="Transparent"
                     ToolTip.Tip="Вернуться к выбору способа подключения">
-              <PathIcon Data="M11,9L12.41,10.41L8.83,14H18V20H20V12H8.83L12.41,8.41L11,7L5,13L11,19V9Z"
-                        Width="16"
-                        Height="16"/>
+              <i:Icon Value="fa-solid fa-arrow-left"
+                      FontSize="16"/>
             </Button>
 
             <!-- Кнопка закрытия -->
@@ -67,9 +67,8 @@
                     Height="28"
                     Padding="0"
                     ToolTip.Tip="Закрыть приложение">
-              <PathIcon Data="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"
-                        Width="14"
-                        Height="14"/>
+              <i:Icon Value="fa-solid fa-xmark"
+                      FontSize="18"/>
             </Button>
           </Grid>
         </Border>
@@ -78,6 +77,30 @@
         <StackPanel Grid.Row="1"
                     Spacing="20"
                     Margin="24,20,24,24">
+
+          <!-- Параметры подключения -->
+          <Grid ColumnDefinitions="100,*" RowDefinitions="Auto,Auto">
+            <!-- Host -->
+            <TextBlock Grid.Row="0" Grid.Column="0"
+                       Text="Хост:"
+                       Classes="label"
+                       VerticalAlignment="Center"
+                       Margin="0,0,12,12"/>
+            <TextBox Grid.Row="0" Grid.Column="1"
+                     Text="{Binding Host}"
+                     Watermark="localhost или IP адрес"
+                     Margin="0,0,0,12"/>
+
+            <!-- Port -->
+            <TextBlock Grid.Row="1" Grid.Column="0"
+                       Text="Порт:"
+                       Classes="label"
+                       VerticalAlignment="Center"
+                       Margin="0,0,12,0"/>
+            <TextBox Grid.Row="1" Grid.Column="1"
+                     Text="{Binding Port}"
+                     Watermark="3306"/>
+          </Grid>
 
           <!-- Информация о статусе -->
           <Border Background="{StaticResource SurfaceBrush}"
@@ -96,26 +119,14 @@
             </StackPanel>
           </Border>
 
-          <!-- Кнопки -->
-          <Grid ColumnDefinitions="*,*" Margin="0,4,0,0">
-            <Button Grid.Column="0"
-                    Classes="secondary"
-                    Command="{Binding CancelCommand}"
-                    IsEnabled="{Binding !IsLoading}"
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Center"
-                    Margin="0,0,8,0"
-                    Content="Отмена" />
-
-            <Button Grid.Column="1"
-                    Classes="primary"
-                    Command="{Binding ConnectCommand}"
-                    IsEnabled="{Binding !IsLoading}"
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Center"
-                    Margin="8,0,0,0"
-                    Content="Автоподключиться" />
-          </Grid>
+          <!-- Кнопка подключения -->
+          <Button Classes="primary"
+                  Command="{Binding ConnectCommand}"
+                  IsEnabled="{Binding !IsLoading}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Margin="0,4,0,0"
+                  Content="Автоподключиться" />
 
         </StackPanel>
       </Grid>
