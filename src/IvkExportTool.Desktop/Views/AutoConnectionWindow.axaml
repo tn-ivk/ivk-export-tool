@@ -126,7 +126,7 @@
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
                   Margin="0,4,0,0"
-                  Content="Автоподключиться" />
+                  Content="Автоподключение" />
 
         </StackPanel>
       </Grid>
