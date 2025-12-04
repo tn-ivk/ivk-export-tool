@@ -8,15 +8,14 @@ namespace IvkExportTool.Core.Security;
 /// </summary>
 internal static class CredentialProtector
 {
-    // Части ключа, рассеянные для усложнения анализа
-    private static readonly byte[] KeyPart1 = { 0x49, 0x76, 0x6B, 0x45 }; // "IvkE"
-    private static readonly byte[] KeyPart2 = { 0x78, 0x70, 0x6F, 0x72 }; // "xpor"
-    private static readonly byte[] KeyPart3 = { 0x74, 0x54, 0x6F, 0x6F }; // "tToo"
-    private static readonly byte[] KeyPart4 = { 0x6C, 0x5F, 0x32, 0x30 }; // "l_20"
-    private static readonly byte[] KeyPart5 = { 0x32, 0x35, 0x5F, 0x4B }; // "25_K"
-    private static readonly byte[] KeyPart6 = { 0x65, 0x79, 0x21, 0x40 }; // "ey!@"
-    private static readonly byte[] KeyPart7 = { 0x23, 0x24, 0x25, 0x5E }; // "#$%^"
-    private static readonly byte[] KeyPart8 = { 0x26, 0x2A, 0x28, 0x29 }; // "&*()"
+    private static readonly byte[] KeyPart1 = { 0x49, 0x76, 0x6B, 0x45 };
+    private static readonly byte[] KeyPart2 = { 0x78, 0x70, 0x6F, 0x72 };
+    private static readonly byte[] KeyPart3 = { 0x74, 0x54, 0x6F, 0x6F };
+    private static readonly byte[] KeyPart4 = { 0x6C, 0x5F, 0x32, 0x30 };
+    private static readonly byte[] KeyPart5 = { 0x32, 0x35, 0x5F, 0x4B };
+    private static readonly byte[] KeyPart6 = { 0x65, 0x79, 0x21, 0x40 };
+    private static readonly byte[] KeyPart7 = { 0x23, 0x24, 0x25, 0x5E };
+    private static readonly byte[] KeyPart8 = { 0x26, 0x2A, 0x28, 0x29 };
 
     /// <summary>
     /// Расшифровывает данные

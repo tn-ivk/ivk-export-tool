@@ -110,7 +110,9 @@
               <TextBlock Text="{Binding StatusMessage}"
                          Classes="body"
                          Foreground="{StaticResource TextPrimaryBrush}"
-                         TextWrapping="Wrap"/>
+                         TextWrapping="Wrap"
+                         TextAlignment="Center"
+                         HorizontalAlignment="Center"/>
 
               <!-- Индикатор загрузки -->
               <ProgressBar IsIndeterminate="{Binding IsLoading}"
