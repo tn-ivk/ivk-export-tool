@@ -79,7 +79,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     // Свойства для ConnectionStatusBar
     public string ConnectionString => _connectionConfig != null
-        ? $"{_connectionConfig.Username}@{_connectionConfig.Host}:{_connectionConfig.Port}"
+        ? $"{_connectionConfig.Host}:{_connectionConfig.Port}"
         : "Не подключено";
 
     public SolidColorBrush ConnectionStatusColor => _connectionConfig != null

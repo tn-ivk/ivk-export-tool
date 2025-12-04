@@ -26,8 +26,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 IvkExportTool/
 ├── src/
 │   ├── IvkExportTool.Core/          # Domain Layer
-│   │   ├── Models/                  # Бизнес-модели (ConnectionConfig, DatabaseInfo, TableInfo, ExportOptions, ExportResult)
+│   │   ├── Models/                  # Бизнес-модели (ConnectionConfig, DatabaseInfo, TableInfo, Credential)
 │   │   ├── Interfaces/              # Интерфейсы сервисов (IDatabaseService, IExportService)
+│   │   ├── Constants/               # Константы (DefaultCredentials - зашифрованные учётные данные)
+│   │   ├── Security/                # Безопасность (CredentialProtector - AES шифрование)
 │   │   └── Enums/                   # Перечисления (ExportFormat, ConnectionStatus)
 │   ├── IvkExportTool.Infrastructure/  # Data Access Layer
 │   │   └── Services/                # Реализация сервисов (MySqlDatabaseService, SqlExportService)
@@ -120,9 +122,11 @@ ViewModels получают зависимости через конструкт
 3. **AutoConnectionWindow** (460x360) - окно автоподключения
    - Поля ввода: хост, порт (загружаются из сохранённых настроек)
    - Статус подключения и индикатор загрузки
-   - Кнопка: "Автоподключиться"
+   - Кнопки: "Отмена" (активна только во время перебора), "Автоподключение"
    - Кнопка возврата на стартовое окно (слева от крестика)
-   - Подключение без логина/пароля (используются значения по умолчанию)
+   - Автоматический перебор зашифрованных учётных данных из `DefaultCredentials.List`
+   - Таймаут подключения: 5 секунд на каждую попытку
+   - Отображение прогресса: "Попытка N из M..."
    - События: `ConnectionSucceeded`, `BackRequested`
    - ViewModel: `AutoConnectionWindowViewModel`
    - Заголовок: "Автоподключение к БД ИВК"
@@ -460,9 +464,36 @@ git push origin v1.0.0
 ## Важные замечания
 
 ### Безопасность
+
+#### Шифрование учётных данных для автоподключения
+
+Учётные данные для автоподключения хранятся в зашифрованном виде (см. `src/IvkExportTool.Core/Constants/DefaultCredentials.cs`):
+
+**Архитектура защиты**:
+- **Алгоритм**: AES-256 в режиме CBC с PKCS7 padding
+- **Хранение**: credentials хранятся как `byte[][]` (IV + ciphertext для каждой пары)
+- **Ключ**: собирается из 8 частей, разбросанных по коду, затем хешируется SHA256
+- **Расшифровка**: lazy-загрузка при первом обращении к `DefaultCredentials.List`
+
+**Файлы**:
+- `Core/Security/CredentialProtector.cs` - класс шифрования/расшифровки
+- `Core/Constants/DefaultCredentials.cs` - зашифрованные credentials
+- `Core/Models/Credential.cs` - модель учётных данных
+
+**Уровень защиты**:
+- ✅ Защищает от: `strings`, `grep`, hex-редакторов, случайного просмотра
+- ✅ Усложняет: статический анализ в ILSpy/dnSpy
+- ⚠️ Не защищает от: отладчика с breakpoint на `Unprotect()`, дампа памяти
+
+**Добавление новых credentials**:
+1. Запустить утилиту `tools/EncryptHelper` (создать временно)
+2. Добавить новую пару в массив credentials
+3. Скопировать сгенерированный `byte[]` в `DefaultCredentials.EncryptedCredentials`
+
+#### Общие правила
 - Строки подключения к базам данных не должны коммититься в репозиторий
 - Использовать `appsettings.Local.json` для локальных настроек (игнорируется Git)
-- Не хранить пароли и ключи в коде
+- Не хранить пароли и ключи в коде в открытом виде
 
 ### Производительность
 - Экспорт больших таблиц должен выполняться асинхронно
