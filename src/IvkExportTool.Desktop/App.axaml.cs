@@ -281,11 +281,12 @@ public partial class App : Application
         var oldMainWindow = _mainWindow;
         _mainWindow = null;
 
-        // Закрываем главное окно и показываем стартовое окно
-        oldMainWindow?.Close();
-
-        // Показываем стартовое окно выбора способа подключения
+        // Показываем стартовое окно ПЕРЕД закрытием главного окна
+        // (ShowStartWindow устанавливает _desktop.MainWindow, что предотвращает завершение приложения)
         ShowStartWindow();
+
+        // Закрываем главное окно ПОСЛЕ установки нового главного окна
+        oldMainWindow?.Close();
     }
 
     private void DisableAvaloniaDataAnnotationValidation()
