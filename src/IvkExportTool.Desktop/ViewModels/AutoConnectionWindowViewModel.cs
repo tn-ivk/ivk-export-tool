@@ -10,6 +10,14 @@ namespace IvkExportTool.Desktop.ViewModels;
 public partial class AutoConnectionWindowViewModel : ViewModelBase
 {
     private readonly IDatabaseService _databaseService;
+    private readonly IAppSettingsService? _appSettingsService;
+
+    // Параметры подключения
+    [ObservableProperty]
+    private string _host = "192.168.233.101";
+
+    [ObservableProperty]
+    private string _port = "3306";
 
     // Состояние
     [ObservableProperty]
@@ -26,14 +34,36 @@ public partial class AutoConnectionWindowViewModel : ViewModelBase
     public event EventHandler? BackRequested;
     public event EventHandler<NotificationRequestedEventArgs>? NotificationRequested;
 
-    public AutoConnectionWindowViewModel() : this(null!)
+    public AutoConnectionWindowViewModel() : this(null!, null!)
     {
         // Конструктор для дизайнера
     }
 
-    public AutoConnectionWindowViewModel(IDatabaseService databaseService)
+    public AutoConnectionWindowViewModel(
+        IDatabaseService databaseService,
+        IAppSettingsService appSettingsService)
     {
         _databaseService = databaseService;
+        _appSettingsService = appSettingsService;
+
+        _ = LoadSettingsAsync();
+    }
+
+    private async Task LoadSettingsAsync()
+    {
+        if (_appSettingsService is null)
+            return;
+
+        try
+        {
+            var config = await _appSettingsService.LoadConnectionAsync();
+            Host = config.Host;
+            Port = config.Port.ToString();
+        }
+        catch
+        {
+            // Игнорируем ошибки загрузки
+        }
     }
 
     [RelayCommand]
@@ -43,30 +73,17 @@ public partial class AutoConnectionWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void Cancel()
-    {
-        BackRequested?.Invoke(this, EventArgs.Empty);
-    }
-
-    [RelayCommand]
     private async Task ConnectAsync()
     {
         IsLoading = true;
-        StatusMessage = "Поиск сервера БД ИВК...";
+        StatusMessage = "Подключение к серверу БД ИВК...";
 
         try
         {
-            // TODO: Реализовать логику автоподключения
-            // Здесь будет логика поиска сервера в локальной сети
-            // и автоматического подключения к БД ИВК
-
-            await Task.Delay(1000); // Симуляция поиска
-
-            // Временная заглушка - используем стандартные параметры
             var config = new ConnectionConfig
             {
-                Host = "192.168.233.101",
-                Port = 3306,
+                Host = Host,
+                Port = int.TryParse(Port, out var port) ? port : 3306,
                 Username = "user",
                 Password = ""
             };
