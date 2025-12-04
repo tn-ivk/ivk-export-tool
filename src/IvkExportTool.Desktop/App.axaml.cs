@@ -11,6 +11,8 @@ using IvkExportTool.Desktop.ViewModels;
 using IvkExportTool.Desktop.Views;
 using IvkExportTool.Infrastructure.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Projektanker.Icons.Avalonia;
+using Projektanker.Icons.Avalonia.FontAwesome;
 
 namespace IvkExportTool.Desktop;
 
@@ -26,6 +28,9 @@ public partial class App : Application
 
     public override void Initialize()
     {
+        // Регистрация провайдера иконок FontAwesome
+        IconProvider.Current.Register<FontAwesomeIconProvider>();
+
         AvaloniaXamlLoader.Load(this);
         ConfigureServices();
     }

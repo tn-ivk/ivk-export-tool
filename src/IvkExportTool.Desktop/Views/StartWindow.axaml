@@ -3,7 +3,7 @@
         xmlns:vm="using:IvkExportTool.Desktop.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:material="using:Material.Icons.Avalonia"
+        xmlns:i="https://github.com/projektanker/icons.avalonia"
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
         x:Class="IvkExportTool.Desktop.Views.StartWindow"
         x:DataType="vm:StartWindowViewModel"
@@ -54,9 +54,8 @@
                     Padding="0"
                     Margin="0,0,8,0"
                     ToolTip.Tip="Закрыть приложение">
-              <material:MaterialIcon Kind="Close"
-                                     Width="18"
-                                     Height="18"/>
+              <i:Icon Value="fa-solid fa-xmark"
+                     FontSize="18"/>
             </Button>
           </Grid>
         </Border>
@@ -73,12 +72,11 @@
                   HorizontalAlignment="Stretch"
                   Height="80">
             <Grid ColumnDefinitions="Auto,*">
-              <material:MaterialIcon Grid.Column="0"
-                                     Kind="Hand"
-                                     Width="40"
-                                     Height="40"
-                                     Margin="20,0,0,0"
-                                     VerticalAlignment="Center"/>
+              <i:Icon Grid.Column="0"
+                     Value="fa-solid fa-hand"
+                     FontSize="36"
+                     Margin="20,0,0,0"
+                     VerticalAlignment="Center"/>
               <TextBlock Grid.Column="1"
                          Text="Ручная настройка подключения"
                          Classes="h5"
@@ -94,12 +92,11 @@
                   HorizontalAlignment="Stretch"
                   Height="80">
             <Grid ColumnDefinitions="Auto,*">
-              <material:MaterialIcon Grid.Column="0"
-                                     Kind="Robot"
-                                     Width="40"
-                                     Height="40"
-                                     Margin="20,0,0,0"
-                                     VerticalAlignment="Center"/>
+              <i:Icon Grid.Column="0"
+                     Value="fa-solid fa-robot"
+                     FontSize="36"
+                     Margin="20,0,0,0"
+                     VerticalAlignment="Center"/>
               <TextBlock Grid.Column="1"
                          Text="Автоподключение"
                          Classes="h5"

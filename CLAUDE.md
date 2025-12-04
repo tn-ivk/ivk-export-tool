@@ -444,7 +444,8 @@ git push origin v1.0.0
 - `Avalonia.Controls.DataGrid` 11.3.8 - таблица данных
 - `Avalonia.Fonts.Inter` 11.3.8 - шрифт Inter
 - `CommunityToolkit.Mvvm` 8.2.1 - MVVM паттерн
-- `Material.Icons.Avalonia` 2.4.1 - Material Design иконки
+- `Projektanker.Icons.Avalonia` 9.5.0 - библиотека иконок
+- `Projektanker.Icons.Avalonia.FontAwesome` 9.5.0 - провайдер FontAwesome иконок
 - `Microsoft.Extensions.DependencyInjection` 9.0.10 - DI контейнер
 - `Microsoft.Extensions.Configuration.Json` 9.0.10 - конфигурация
 
