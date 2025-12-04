@@ -52,7 +52,6 @@
                     Width="28"
                     Height="28"
                     Padding="0"
-                    Margin="0,0,8,0"
                     ToolTip.Tip="Закрыть приложение">
               <i:Icon Value="fa-solid fa-xmark"
                      FontSize="18"/>
