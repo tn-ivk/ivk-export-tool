@@ -119,14 +119,28 @@
             </StackPanel>
           </Border>
 
-          <!-- Кнопка подключения -->
-          <Button Classes="primary"
-                  Command="{Binding ConnectCommand}"
-                  IsEnabled="{Binding !IsLoading}"
-                  HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center"
-                  Margin="0,4,0,0"
-                  Content="Автоподключение" />
+          <!-- Кнопки -->
+          <Grid ColumnDefinitions="*,*" Margin="0,4,0,0">
+            <!-- Кнопка отмены -->
+            <Button Grid.Column="0"
+                    Classes="secondary"
+                    Command="{Binding CancelCommand}"
+                    IsEnabled="{Binding CanCancel}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Margin="0,0,8,0"
+                    Content="Отмена" />
+
+            <!-- Кнопка автоподключения -->
+            <Button Grid.Column="1"
+                    Classes="primary"
+                    Command="{Binding ConnectCommand}"
+                    IsEnabled="{Binding !IsLoading}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Margin="8,0,0,0"
+                    Content="Автоподключение" />
+          </Grid>
 
         </StackPanel>
       </Grid>
