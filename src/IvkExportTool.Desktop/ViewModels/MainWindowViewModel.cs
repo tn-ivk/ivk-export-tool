@@ -170,7 +170,6 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         if (!string.IsNullOrEmpty(value) && _connectionConfig != null)
         {
-            _connectionConfig.Database = value;
             _ = RefreshTablesAsync();
         }
     }
