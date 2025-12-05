@@ -11,6 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **.NET 10.0** (SDK 10.0.0)
 - **Avalonia UI 11.3.8** - кроссплатформенный GUI фреймворк
 - **MySqlConnector 2.4.0** - подключение к MySQL базам данных
+- **Config.Net 5.2.1** - управление конфигурацией приложения
 - **CommunityToolkit.Mvvm 8.2.1** - MVVM паттерн
 - **NUnit 4.2.2** - тестирование
 - **FluentAssertions 8.8.0** - assertion библиотека для тестов
@@ -32,6 +33,7 @@ IvkExportTool/
 │   │   ├── Security/                # Безопасность (CredentialProtector - AES шифрование)
 │   │   └── Enums/                   # Перечисления (ExportFormat, ConnectionStatus)
 │   ├── IvkExportTool.Infrastructure/  # Data Access Layer
+│   │   ├── Configuration/           # Конфигурация (ISettingsStore, SettingsStoreFactory)
 │   │   └── Services/                # Реализация сервисов (MySqlDatabaseService, SqlExportService)
 │   └── IvkExportTool.Desktop/       # Presentation Layer
 │       ├── ViewModels/              # MVVM ViewModels (CommunityToolkit.Mvvm)
@@ -72,7 +74,7 @@ IvkExportTool/
   - Несколько таблиц: `ИмяБазыДанных_ДатаВремя.sql`
 - Последняя использованная папка сохраняется в настройках
 - По умолчанию (при первом запуске) используется текущая директория приложения
-- Настройки сохраняются в `appsettings.json` в поле `LastExportDirectory`
+- Настройки сохраняются в `settings.json` в поле `LastExportDirectory`
 
 **Таймер и прогресс экспорта**:
 - Общий таймер показывает время экспорта всех выбранных таблиц
@@ -231,7 +233,59 @@ public string WindowTitle
 }
 ```
 
-### Конфигурационные файлы
+### Система настроек приложения (Config.Net)
+
+Приложение использует библиотеку [Config.Net](https://github.com/aloneguid/config) для хранения настроек в JSON файле.
+
+#### Расположение файла настроек
+
+Файл `settings.json` хранится в стандартных папках конфигурации ОС:
+- **Windows**: `%APPDATA%\IvkExportTool\settings.json`
+- **Linux/macOS**: `~/.config/IvkExportTool/settings.json`
+
+#### Структура настроек
+
+```json
+{
+  "Connection": {
+    "Host": "192.168.233.101",
+    "Port": 3306,
+    "Username": "user",
+    "Database": null,
+    "EncryptedPassword": "..."
+  },
+  "LastExportDirectory": "/path/to/exports"
+}
+```
+
+#### Архитектура
+
+**Файлы**:
+- `Infrastructure/Configuration/ISettingsStore.cs` - интерфейс для Config.Net
+- `Infrastructure/Configuration/SettingsStoreFactory.cs` - фабрика для создания хранилища настроек
+- `Infrastructure/Services/AppSettingsService.cs` - сервис-адаптер, реализующий `IAppSettingsService`
+
+**Использование Config.Net**:
+```csharp
+// Создание хранилища настроек
+var settings = new ConfigurationBuilder<ISettingsStore>()
+    .UseJsonFile(settingsPath)
+    .Build();
+
+// Чтение/запись настроек (автоматически сохраняется в JSON)
+settings.Connection.Host = "localhost";
+settings.LastExportDirectory = "/exports";
+```
+
+#### Шифрование паролей
+
+Пароли в настройках хранятся в зашифрованном виде:
+- **Windows**: DPAPI (`ProtectedData`, `DataProtectionScope.CurrentUser`)
+- **Linux/macOS**: AES-256 в режиме CBC с ключом на основе имени пользователя и машины
+
+**Важно**: Зашифрованный пароль с Windows НЕ совместим с Linux и наоборот.
+
+### Конфигурационные файлы проекта
 
 - **`Directory.Build.props`** - общие настройки для всех проектов (LangVersion, Nullable, метаданные)
 - **`global.json`** - версия .NET SDK (10.0.0)
@@ -424,7 +478,7 @@ git push origin v1.0.0
 - Нет вложенных директорий типа `runtime/` - пользователь может сразу запустить приложение после распаковки
 - Включены файлы:
   - `IvkExportTool.exe` (Windows) или `IvkExportTool` (Linux)
-  - `appsettings.json` - конфигурация приложения
+- Настройки приложения хранятся отдельно в `%APPDATA%` (Windows) или `~/.config` (Linux)
 
 **Форматы архивов**:
 - Windows: `.zip` архив (создается через `Compress-Archive`)
@@ -440,6 +494,7 @@ git push origin v1.0.0
 - Не имеет внешних зависимостей (только .NET 10.0)
 
 ### Infrastructure проект
+- `Config.Net` 5.2.1 - управление конфигурацией приложения
 - `MySqlConnector` 2.4.0 - подключение к MySQL
 - `System.Security.Cryptography.ProtectedData` 8.0.0 - защищённое хранение данных
 
@@ -453,7 +508,6 @@ git push origin v1.0.0
 - `Projektanker.Icons.Avalonia` 9.5.0 - библиотека иконок
 - `Projektanker.Icons.Avalonia.FontAwesome` 9.5.0 - провайдер FontAwesome иконок
 - `Microsoft.Extensions.DependencyInjection` 9.0.10 - DI контейнер
-- `Microsoft.Extensions.Configuration.Json` 9.0.10 - конфигурация
 
 ### Tests проект
 - `NUnit` 4.2.2 - фреймворк для тестирования
@@ -492,7 +546,7 @@ git push origin v1.0.0
 
 #### Общие правила
 - Строки подключения к базам данных не должны коммититься в репозиторий
-- Использовать `appsettings.Local.json` для локальных настроек (игнорируется Git)
+- Настройки хранятся в `%APPDATA%` (Windows) или `~/.config` (Linux), а не в папке приложения
 - Не хранить пароли и ключи в коде в открытом виде
 
 ### Производительность

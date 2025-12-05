@@ -1,52 +1,31 @@
-using System;
-using System.IO;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
 using IvkExportTool.Core.Interfaces;
 using IvkExportTool.Core.Models;
+using IvkExportTool.Infrastructure.Configuration;
 
 namespace IvkExportTool.Infrastructure.Services;
 
+/// <summary>
+/// Сервис для работы с настройками приложения.
+/// Использует Config.Net для хранения в JSON файле.
+/// </summary>
 public class AppSettingsService : IAppSettingsService
 {
-    private const string SettingsFileName = "appsettings.json";
-
-    private readonly string _settingsPath;
-    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly ISettingsStore _settings;
 
     public AppSettingsService()
     {
-        var baseDirectory = AppContext.BaseDirectory;
-        _settingsPath = Path.Combine(baseDirectory, SettingsFileName);
-        _jsonOptions = new JsonSerializerOptions
-        {
-            WriteIndented = true
-        };
+        _settings = SettingsStoreFactory.Create();
     }
 
-    public async Task<ConnectionConfig> LoadConnectionAsync()
+    public Task<ConnectionConfig> LoadConnectionAsync()
     {
         var defaultConfig = CreateDefaultConfig();
 
-        if (!File.Exists(_settingsPath))
-        {
-            await SaveConnectionAsync(defaultConfig);
-            return defaultConfig;
-        }
-
         try
         {
-            await using var stream = File.OpenRead(_settingsPath);
-            var settings = await JsonSerializer.DeserializeAsync<AppSettingsData>(stream, _jsonOptions);
-
-            if (settings?.Connection is null)
-            {
-                return defaultConfig;
-            }
-
-            var connection = settings.Connection;
+            var connection = _settings.Connection;
 
             var config = new ConnectionConfig
             {
@@ -60,45 +39,59 @@ public class AppSettingsService : IAppSettingsService
                 ? defaultConfig.Password
                 : DecryptPassword(connection.EncryptedPassword);
 
-            return config;
+            return Task.FromResult(config);
         }
         catch
         {
-            return defaultConfig;
+            return Task.FromResult(defaultConfig);
         }
     }
 
-    public async Task SaveConnectionAsync(ConnectionConfig config)
+    public Task SaveConnectionAsync(ConnectionConfig config)
     {
-        var data = new AppSettingsData
-        {
-            Connection = new ConnectionSettingsData
-            {
-                Host = config.Host,
-                Port = config.Port,
-                Username = config.Username,
-                Database = config.Database,
-                EncryptedPassword = string.IsNullOrEmpty(config.Password)
-                    ? string.Empty
-                    : EncryptPassword(config.Password)
-            }
-        };
-
         try
         {
-            var directory = Path.GetDirectoryName(_settingsPath);
-            if (!string.IsNullOrEmpty(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-
-            await using var stream = File.Create(_settingsPath);
-            await JsonSerializer.SerializeAsync(stream, data, _jsonOptions);
+            var connection = _settings.Connection;
+            connection.Host = config.Host;
+            connection.Port = config.Port;
+            connection.Username = config.Username;
+            connection.Database = config.Database;
+            connection.EncryptedPassword = string.IsNullOrEmpty(config.Password)
+                ? string.Empty
+                : EncryptPassword(config.Password);
         }
         catch
         {
             // Игнорируем ошибки записи, чтобы не нарушать основной сценарий работы приложения.
         }
+
+        return Task.CompletedTask;
+    }
+
+    public Task<string?> LoadLastExportDirectoryAsync()
+    {
+        try
+        {
+            return Task.FromResult(_settings.LastExportDirectory);
+        }
+        catch
+        {
+            return Task.FromResult<string?>(null);
+        }
+    }
+
+    public Task SaveLastExportDirectoryAsync(string directory)
+    {
+        try
+        {
+            _settings.LastExportDirectory = directory;
+        }
+        catch
+        {
+            // Игнорируем ошибки записи
+        }
+
+        return Task.CompletedTask;
     }
 
     private static ConnectionConfig CreateDefaultConfig() => new();
@@ -182,69 +175,4 @@ public class AppSettingsService : IAppSettingsService
         var source = Encoding.UTF8.GetBytes($"{Environment.UserName}|{Environment.MachineName}|IvkExportTool");
         return SHA256.HashData(source);
     }
-
-    public async Task<string?> LoadLastExportDirectoryAsync()
-    {
-        if (!File.Exists(_settingsPath))
-        {
-            return null;
-        }
-
-        try
-        {
-            await using var stream = File.OpenRead(_settingsPath);
-            var settings = await JsonSerializer.DeserializeAsync<AppSettingsData>(stream, _jsonOptions);
-            return settings?.LastExportDirectory;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    public async Task SaveLastExportDirectoryAsync(string directory)
-    {
-        try
-        {
-            AppSettingsData? settings = null;
-
-            if (File.Exists(_settingsPath))
-            {
-                await using var readStream = File.OpenRead(_settingsPath);
-                settings = await JsonSerializer.DeserializeAsync<AppSettingsData>(readStream, _jsonOptions);
-            }
-
-            settings ??= new AppSettingsData();
-            settings.LastExportDirectory = directory;
-
-            var directoryPath = Path.GetDirectoryName(_settingsPath);
-            if (!string.IsNullOrEmpty(directoryPath))
-            {
-                Directory.CreateDirectory(directoryPath);
-            }
-
-            await using var writeStream = File.Create(_settingsPath);
-            await JsonSerializer.SerializeAsync(writeStream, settings, _jsonOptions);
-        }
-        catch
-        {
-            // Игнорируем ошибки записи
-        }
-    }
-
-    private class AppSettingsData
-    {
-        public ConnectionSettingsData? Connection { get; set; }
-        public string? LastExportDirectory { get; set; }
-    }
-
-    private class ConnectionSettingsData
-    {
-        public string? Host { get; set; }
-        public int Port { get; set; }
-        public string? Username { get; set; }
-        public string? Database { get; set; }
-        public string? EncryptedPassword { get; set; }
-    }
 }
-
