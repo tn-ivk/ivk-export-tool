@@ -38,11 +38,6 @@ public interface IConnectionSettings
     string? Username { get; set; }
 
     /// <summary>
-    /// Имя базы данных.
-    /// </summary>
-    string? Database { get; set; }
-
-    /// <summary>
     /// Зашифрованный пароль (Base64).
     /// </summary>
     string? EncryptedPassword { get; set; }

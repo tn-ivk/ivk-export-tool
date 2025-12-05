@@ -251,7 +251,6 @@ public string WindowTitle
     "Host": "192.168.233.101",
     "Port": 3306,
     "Username": "user",
-    "Database": null,
     "EncryptedPassword": "..."
   },
   "LastExportDirectory": "/path/to/exports"

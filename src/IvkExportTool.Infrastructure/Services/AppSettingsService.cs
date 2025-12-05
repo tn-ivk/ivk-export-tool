@@ -31,8 +31,7 @@ public class AppSettingsService : IAppSettingsService
             {
                 Host = string.IsNullOrWhiteSpace(connection.Host) ? defaultConfig.Host : connection.Host,
                 Port = connection.Port <= 0 ? defaultConfig.Port : connection.Port,
-                Username = string.IsNullOrWhiteSpace(connection.Username) ? defaultConfig.Username : connection.Username,
-                Database = connection.Database
+                Username = string.IsNullOrWhiteSpace(connection.Username) ? defaultConfig.Username : connection.Username
             };
 
             config.Password = string.IsNullOrWhiteSpace(connection.EncryptedPassword)
@@ -55,7 +54,6 @@ public class AppSettingsService : IAppSettingsService
             connection.Host = config.Host;
             connection.Port = config.Port;
             connection.Username = config.Username;
-            connection.Database = config.Database;
             connection.EncryptedPassword = string.IsNullOrEmpty(config.Password)
                 ? string.Empty
                 : EncryptPassword(config.Password);
