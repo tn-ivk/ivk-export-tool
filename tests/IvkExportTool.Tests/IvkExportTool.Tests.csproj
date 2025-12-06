@@ -25,6 +25,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\IvkExportTool.Core\IvkExportTool.Core.csproj" />
     <ProjectReference Include="..\..\src\IvkExportTool.Infrastructure\IvkExportTool.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\IvkExportTool.Desktop\IvkExportTool.Desktop.csproj" />
   </ItemGroup>
 
 </Project>
