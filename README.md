@@ -109,7 +109,7 @@ IvkExportTool/
 - **.NET 10.0** - платформа разработки
 - **Avalonia UI 11.x** - кроссплатформенный GUI фреймворк
 - **MySqlConnector** - подключение к MySQL
-- **Config.Net** - управление настройками
+- **System.Text.Json** - сериализация настроек (AOT-совместимо)
 - **CommunityToolkit.Mvvm** - MVVM паттерн
 - **NUnit** - тестирование
 

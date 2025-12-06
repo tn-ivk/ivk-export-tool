@@ -11,8 +11,7 @@
 - Настройки приложения перемещены в стандартные папки конфигурации ОС:
   - Windows: `%APPDATA%\IvkExportTool\settings.json`
   - Linux/macOS: `~/.config/IvkExportTool/settings.json`
-- Интегрирована библиотека [Config.Net](https://github.com/aloneguid/config) для управления настройками
-- Удалена зависимость от `Microsoft.Extensions.Configuration.Json`
+- Система настроек переведена на **System.Text.Json с Source Generators** для AOT-совместимости
 - Убрано копирование `appsettings.json` в CI/CD pipeline
 
 ### Removed

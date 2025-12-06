@@ -450,29 +450,46 @@ private void OnConnectionSucceeded(ConnectionConfig config)
 
 ### Сохранение настроек
 
-**AppSettingsService** (`Infrastructure/Services/AppSettingsService.cs`):
+Настройки управляются через **System.Text.Json с Source Generators** для AOT-совместимости.
+
+**Структура файлов конфигурации** (`Infrastructure/Configuration/`):
+- `AppSettings.cs` — POCO-классы настроек
+- `AppSettingsJsonContext.cs` — Source Generator контекст
+- `SettingsStore.cs` — загрузка/сохранение настроек
+
+**AppSettingsJsonContext** (compile-time сериализация):
 
 ```csharp
-public class AppSettingsService : IAppSettingsService
+[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSerializable(typeof(AppSettings))]
+internal partial class AppSettingsJsonContext : JsonSerializerContext { }
+```
+
+**SettingsStore** (потокобезопасные операции):
+
+```csharp
+public static class SettingsStore
 {
-    private readonly string _settingsPath;
+    private static readonly object _lock = new();
 
-    public void SaveSettings(AppSettings settings)
+    public static AppSettings Load()
     {
-        var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions
-        {
-            WriteIndented = true
-        });
-        File.WriteAllText(_settingsPath, json);
-    }
-
-    public AppSettings LoadSettings()
-    {
-        if (!File.Exists(_settingsPath))
+        if (!File.Exists(SettingsPath))
             return new AppSettings();
 
-        var json = File.ReadAllText(_settingsPath);
-        return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+        var json = File.ReadAllText(SettingsPath);
+        return JsonSerializer.Deserialize(json, AppSettingsJsonContext.Default.AppSettings)
+               ?? new AppSettings();
+    }
+
+    public static void Save(AppSettings settings)
+    {
+        lock (_lock)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
+            var json = JsonSerializer.Serialize(settings, AppSettingsJsonContext.Default.AppSettings);
+            File.WriteAllText(SettingsPath, json);
+        }
     }
 }
 ```

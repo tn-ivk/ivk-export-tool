@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **.NET 10.0** (SDK 10.0.0)
 - **Avalonia UI 11.3.8** - кроссплатформенный GUI фреймворк
 - **MySqlConnector 2.4.0** - подключение к MySQL базам данных
-- **Config.Net 5.2.1** - управление конфигурацией приложения
+- **System.Text.Json с Source Generators** - AOT-совместимая сериализация настроек
 - **CommunityToolkit.Mvvm 8.2.1** - MVVM паттерн
 - **NUnit 4.2.2** - тестирование
 - **FluentAssertions 8.8.0** - assertion библиотека для тестов
@@ -33,7 +33,7 @@ IvkExportTool/
 │   │   ├── Security/                # Безопасность (CredentialProtector - AES шифрование)
 │   │   └── Enums/                   # Перечисления (ExportFormat, ConnectionStatus)
 │   ├── IvkExportTool.Infrastructure/  # Data Access Layer
-│   │   ├── Configuration/           # Конфигурация (ISettingsStore, SettingsStoreFactory)
+│   │   ├── Configuration/           # Конфигурация (AppSettings, SettingsStore, JsonContext)
 │   │   └── Services/                # Реализация сервисов (MySqlDatabaseService, SqlExportService)
 │   └── IvkExportTool.Desktop/       # Presentation Layer
 │       ├── ViewModels/              # MVVM ViewModels (CommunityToolkit.Mvvm)
@@ -80,7 +80,7 @@ IvkExportTool/
 - Общий таймер показывает время экспорта всех выбранных таблиц
 - Обновление прогресса происходит каждую секунду (по времени, а не по количеству строк)
 - Общий `Stopwatch` передается через всю цепочку методов экспорта в `SqlExportService` (см. `src/IvkExportTool.Infrastructure/Services/SqlExportService.cs:20-60`)
-- UI показывает упрощенную строку состояния: детальное сообщение и время в одной строке
+- UI показывает упрощенную строку состояния: детальное сообщение и прошедшее время на одном уровне (без подписи "Время")
 - Убрана информация о текущей таблице и количестве обработанных строк для упрощения интерфейса
 
 ### Dependency Injection
@@ -261,9 +261,13 @@ public string WindowTitle
 }
 ```
 
-### Система настроек приложения (Config.Net)
+### Система настроек приложения (System.Text.Json + Source Generators)
 
-Приложение использует библиотеку [Config.Net](https://github.com/aloneguid/config) для хранения настроек в JSON файле.
+Приложение использует **System.Text.Json с Source Generators** для AOT-совместимой сериализации настроек.
+
+#### Почему не Config.Net
+
+Ранее использовалась библиотека Config.Net, но она несовместима с IL Trimming из-за использования рефлексии для создания прокси-объектов. При публикации с `PublishTrimmed=true` приложение падало.
 
 #### Расположение файла настроек
 
@@ -290,21 +294,35 @@ public string WindowTitle
 #### Архитектура
 
 **Файлы**:
-- `Infrastructure/Configuration/ISettingsStore.cs` - интерфейс для Config.Net
-- `Infrastructure/Configuration/SettingsStoreFactory.cs` - фабрика для создания хранилища настроек
+- `Infrastructure/Configuration/AppSettings.cs` - POCO-классы для настроек (`AppSettings`, `ConnectionSettings`)
+- `Infrastructure/Configuration/AppSettingsJsonContext.cs` - JSON Source Generator контекст для AOT-совместимости
+- `Infrastructure/Configuration/SettingsStore.cs` - статический класс для загрузки/сохранения настроек
 - `Infrastructure/Services/AppSettingsService.cs` - сервис-адаптер, реализующий `IAppSettingsService`
 
-**Использование Config.Net**:
+**Использование Source Generators**:
 ```csharp
-// Создание хранилища настроек
-var settings = new ConfigurationBuilder<ISettingsStore>()
-    .UseJsonFile(settingsPath)
-    .Build();
+// JSON Source Generator контекст (compile-time сериализация)
+[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSerializable(typeof(AppSettings))]
+internal partial class AppSettingsJsonContext : JsonSerializerContext { }
 
-// Чтение/запись настроек (автоматически сохраняется в JSON)
-settings.Connection.Host = "localhost";
-settings.LastExportDirectory = "/exports";
+// Загрузка настроек (AOT-совместимо)
+var json = File.ReadAllText(settingsPath);
+var settings = JsonSerializer.Deserialize(json, AppSettingsJsonContext.Default.AppSettings);
+
+// Сохранение настроек (thread-safe)
+lock (_lock)
+{
+    var json = JsonSerializer.Serialize(settings, AppSettingsJsonContext.Default.AppSettings);
+    File.WriteAllText(settingsPath, json);
+}
 ```
+
+**Преимущества**:
+- ✅ Полная AOT-совместимость (нет рефлексии)
+- ✅ Работает с IL Trimming (`PublishTrimmed=true`)
+- ✅ Thread-safe операции записи через `lock`
+- ✅ Обратная совместимость с существующими файлами настроек
 
 #### Шифрование паролей
 

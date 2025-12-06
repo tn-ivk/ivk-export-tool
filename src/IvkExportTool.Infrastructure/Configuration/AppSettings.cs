@@ -1,44 +1,43 @@
 namespace IvkExportTool.Infrastructure.Configuration;
 
 /// <summary>
-/// Интерфейс хранилища настроек для Config.Net.
-/// Используется для чтения/записи настроек в JSON файл.
+/// Настройки приложения для сериализации в JSON.
 /// </summary>
-public interface ISettingsStore
+public sealed class AppSettings
 {
     /// <summary>
     /// Настройки подключения к базе данных.
     /// </summary>
-    IConnectionSettings Connection { get; }
+    public ConnectionSettings Connection { get; set; } = new();
 
     /// <summary>
     /// Путь к последней папке экспорта.
     /// </summary>
-    string? LastExportDirectory { get; set; }
+    public string? LastExportDirectory { get; set; }
 }
 
 /// <summary>
 /// Настройки подключения к базе данных.
 /// </summary>
-public interface IConnectionSettings
+public sealed class ConnectionSettings
 {
     /// <summary>
     /// Хост сервера базы данных.
     /// </summary>
-    string? Host { get; set; }
+    public string? Host { get; set; }
 
     /// <summary>
     /// Порт сервера базы данных.
     /// </summary>
-    int Port { get; set; }
+    public int Port { get; set; }
 
     /// <summary>
     /// Имя пользователя для подключения.
     /// </summary>
-    string? Username { get; set; }
+    public string? Username { get; set; }
 
     /// <summary>
     /// Зашифрованный пароль (Base64).
     /// </summary>
-    string? EncryptedPassword { get; set; }
+    public string? EncryptedPassword { get; set; }
 }

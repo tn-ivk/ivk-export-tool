@@ -8,15 +8,15 @@ namespace IvkExportTool.Infrastructure.Services;
 
 /// <summary>
 /// Сервис для работы с настройками приложения.
-/// Использует Config.Net для хранения в JSON файле.
+/// Использует System.Text.Json с Source Generators для AOT-совместимости.
 /// </summary>
 public class AppSettingsService : IAppSettingsService
 {
-    private readonly ISettingsStore _settings;
+    private AppSettings _settings;
 
     public AppSettingsService()
     {
-        _settings = SettingsStoreFactory.Create();
+        _settings = SettingsStore.Load();
     }
 
     public Task<ConnectionConfig> LoadConnectionAsync()
@@ -48,13 +48,14 @@ public class AppSettingsService : IAppSettingsService
     {
         try
         {
-            var connection = _settings.Connection;
-            connection.Host = config.Host;
-            connection.Port = config.Port;
-            connection.Username = config.Username;
-            connection.EncryptedPassword = string.IsNullOrEmpty(config.Password)
+            _settings.Connection.Host = config.Host;
+            _settings.Connection.Port = config.Port;
+            _settings.Connection.Username = config.Username;
+            _settings.Connection.EncryptedPassword = string.IsNullOrEmpty(config.Password)
                 ? string.Empty
                 : EncryptPassword(config.Password);
+
+            SettingsStore.Save(_settings);
         }
         catch
         {
@@ -81,6 +82,7 @@ public class AppSettingsService : IAppSettingsService
         try
         {
             _settings.LastExportDirectory = directory;
+            SettingsStore.Save(_settings);
         }
         catch
         {
