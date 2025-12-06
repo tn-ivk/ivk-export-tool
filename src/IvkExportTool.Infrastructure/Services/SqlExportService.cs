@@ -261,7 +261,7 @@ public class SqlExportService : IExportService
         }
     }
 
-    private int CalculatePercent(ExportProgress progress)
+    internal int CalculatePercent(ExportProgress progress)
     {
         if (progress.TotalTables == 0)
             return 0;
@@ -279,7 +279,7 @@ public class SqlExportService : IExportService
         return (int)(totalProgress * 100);
     }
 
-    private string ConvertToSqlValue(object value)
+    internal string ConvertToSqlValue(object value)
     {
         return value switch
         {
@@ -293,7 +293,7 @@ public class SqlExportService : IExportService
         };
     }
 
-    private string BuildEscapedString(string value)
+    internal string BuildEscapedString(string value)
     {
         var sb = new StringBuilder(value.Length + 20);
         sb.Append('\'');
@@ -333,7 +333,7 @@ public class SqlExportService : IExportService
         return sb.ToString();
     }
 
-    private string BuildHexString(byte[] bytes)
+    internal string BuildHexString(byte[] bytes)
     {
         if (bytes.Length == 0)
             return "X''";

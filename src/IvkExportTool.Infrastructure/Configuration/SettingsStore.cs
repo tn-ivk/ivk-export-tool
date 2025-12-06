@@ -15,6 +15,16 @@ public static class SettingsStore
     private static string? _cachedSettingsPath;
 
     /// <summary>
+    /// Устанавливает путь к файлу настроек для тестирования.
+    /// </summary>
+    internal static void SetSettingsPathForTesting(string path) => _cachedSettingsPath = path;
+
+    /// <summary>
+    /// Сбрасывает путь к файлу настроек.
+    /// </summary>
+    internal static void ResetSettingsPath() => _cachedSettingsPath = null;
+
+    /// <summary>
     /// Загружает настройки из JSON файла.
     /// </summary>
     /// <returns>Настройки приложения. Возвращает новый экземпляр, если файл не существует.</returns>
