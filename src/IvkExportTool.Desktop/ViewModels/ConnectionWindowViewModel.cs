@@ -19,7 +19,7 @@ public partial class ConnectionWindowViewModel : ViewModelBase
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsHostValid))]
     [NotifyPropertyChangedFor(nameof(CanConnect))]
-    private string _host = "";
+    private string _host = "192.168.233.101";
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsPortValid))]
