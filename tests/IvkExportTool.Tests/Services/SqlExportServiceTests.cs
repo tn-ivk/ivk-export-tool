@@ -1,9 +1,5 @@
-using System.Text;
 using FluentAssertions;
-using IvkExportTool.Core.Models;
 using IvkExportTool.Infrastructure.Services;
-using Moq;
-using MySqlConnector;
 
 namespace IvkExportTool.Tests.Services;
 

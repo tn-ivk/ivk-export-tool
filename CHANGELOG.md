@@ -7,12 +7,16 @@
 
 ## [Unreleased]
 
+### Added
+- Хост по умолчанию (`192.168.233.101`) в окнах ручного и автоподключения
+
 ### Changed
 - Настройки приложения перемещены в стандартные папки конфигурации ОС:
   - Windows: `%APPDATA%\IvkExportTool\settings.json`
   - Linux/macOS: `~/.config/IvkExportTool/settings.json`
 - Система настроек переведена на **System.Text.Json с Source Generators** для AOT-совместимости
 - Убрано копирование `appsettings.json` в CI/CD pipeline
+- Упрощено отображение прогресса экспорта: убрана подпись "Время", значение выровнено на одном уровне с детальным сообщением
 
 ### Removed
 - Удалено неиспользуемое поле `Database` из настроек подключения
