@@ -59,9 +59,10 @@ public class SqlExportService : IExportService
                     Elapsed = stopwatch.Elapsed
                 };
 
-                await ExportTableAsync(connection, writer, tableName, options, tableProgress, detailedProgress, stopwatch, cancellationToken);
+                var rowsExported = await ExportTableAsync(connection, writer, tableName, options, tableProgress, detailedProgress, stopwatch, cancellationToken);
 
                 result.TablesExported++;
+                result.RowsExported += rowsExported;
                 currentTableIndex++;
                 progress?.Report((int)((double)currentTableIndex / totalTables * 100));
             }
@@ -84,7 +85,7 @@ public class SqlExportService : IExportService
         return result;
     }
 
-    private async Task ExportTableAsync(
+    private async Task<long> ExportTableAsync(
         MySqlConnection connection,
         StreamWriter writer,
         string tableName,
@@ -120,19 +121,21 @@ public class SqlExportService : IExportService
         }
 
         // INSERT DATA
+        long rowsExported = 0;
         if (options.IncludeData)
         {
             await writer.WriteLineAsync($"-- ----------------------------");
             await writer.WriteLineAsync($"-- Records of {tableName}");
             await writer.WriteLineAsync($"-- ----------------------------");
 
-            await ExportTableDataAsync(connection, writer, tableName, options.BatchSize, tableProgress, detailedProgress, stopwatch, cancellationToken);
+            rowsExported = await ExportTableDataAsync(connection, writer, tableName, options.BatchSize, tableProgress, detailedProgress, stopwatch, cancellationToken);
         }
 
         await writer.WriteLineAsync();
+        return rowsExported;
     }
 
-    private async Task ExportTableDataAsync(
+    private async Task<long> ExportTableDataAsync(
         MySqlConnection connection,
         StreamWriter writer,
         string tableName,
@@ -164,7 +167,7 @@ public class SqlExportService : IExportService
         await using var reader = await selectCommand.ExecuteReaderAsync(cancellationToken);
 
         if (!reader.HasRows)
-            return;
+            return 0;
 
         var columnCount = reader.FieldCount;
         var columnNames = new string[columnCount];
@@ -259,6 +262,8 @@ public class SqlExportService : IExportService
         {
             await writer.WriteLineAsync(";");
         }
+
+        return rowCount;
     }
 
     internal int CalculatePercent(ExportProgress progress)

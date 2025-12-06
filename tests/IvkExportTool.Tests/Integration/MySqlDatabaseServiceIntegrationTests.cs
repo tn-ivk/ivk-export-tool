@@ -283,13 +283,14 @@ public class MySqlDatabaseServiceIntegrationTests : MySqlIntegrationTestBase
     }
 
     [Test]
-    public async Task GetTableInfoAsync_NonExistentTable_ReturnsNull()
+    public async Task GetTableInfoAsync_NonExistentTable_ThrowsArgumentException()
     {
         // Act
-        var tableInfo = await _service.GetTableInfoAsync(ConnectionConfig, "nonexistent_table");
+        var act = async () => await _service.GetTableInfoAsync(ConnectionConfig, "nonexistent_table");
 
         // Assert
-        tableInfo.Should().BeNull();
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*nonexistent_table*not found*");
     }
 
     [Test]
