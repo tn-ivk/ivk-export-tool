@@ -6,16 +6,28 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+
+    <!-- Coverlet settings -->
+    <CollectCoverage>true</CollectCoverage>
+    <CoverletOutputFormat>cobertura</CoverletOutputFormat>
+    <!-- Exclude: Views, App entry point, ViewLocator, generated JSON context, compiled XAML -->
+    <Exclude>[IvkExportTool.Desktop]IvkExportTool.Desktop.Views.*,[IvkExportTool.Desktop]IvkExportTool.Desktop.App,[IvkExportTool.Desktop]IvkExportTool.Desktop.Program,[IvkExportTool.Desktop]IvkExportTool.Desktop.ViewLocator,[IvkExportTool.Infrastructure]IvkExportTool.Infrastructure.Configuration.AppSettingsJsonContext,[IvkExportTool.Desktop]CompiledAvaloniaXaml.*</Exclude>
+    <ExcludeByFile>**/obj/**/*.cs</ExcludeByFile>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.2" />
+    <PackageReference Include="coverlet.msbuild" Version="6.0.4">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="FluentAssertions" Version="8.8.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="NUnit" Version="4.2.2" />
     <PackageReference Include="NUnit.Analyzers" Version="4.4.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+    <PackageReference Include="Testcontainers.MySql" Version="4.9.0" />
   </ItemGroup>
 
   <ItemGroup>
