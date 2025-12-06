@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using IvkExportTool.Core.Interfaces;
 using IvkExportTool.Core.Models;
@@ -287,6 +288,7 @@ public class SqlExportService : IExportService
             bool b => b ? "1" : "0",
             byte[] bytes => BuildHexString(bytes),
             null => "NULL",
+            IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture) ?? "NULL",
             _ => value.ToString() ?? "NULL"
         };
     }
