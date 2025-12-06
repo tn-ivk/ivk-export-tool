@@ -166,7 +166,7 @@ public partial class AutoConnectionWindowViewModel : ViewModelBase
                 StatusType = StatusMessageType.Error;
 
                 ShowNotification(
-                    "✗ Не удалось подключиться ни с одной парой учётных данных.",
+                    "✗ Не удалось подключиться к устройству.",
                     StatusMessageType.Error);
             }
         }
