@@ -15,6 +15,15 @@ public interface IDatabaseService
     Task<bool> TestConnectionAsync(ConnectionConfig config);
 
     /// <summary>
+    /// Тестирование подключения к базе данных с таймаутом и возможностью отмены
+    /// </summary>
+    /// <param name="config">Конфигурация подключения</param>
+    /// <param name="timeout">Таймаут подключения</param>
+    /// <param name="cancellationToken">Токен отмены</param>
+    /// <returns>True если подключение успешно</returns>
+    Task<bool> TestConnectionAsync(ConnectionConfig config, TimeSpan timeout, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Получение списка баз данных на сервере
     /// </summary>
     /// <param name="config">Конфигурация подключения</param>

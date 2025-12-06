@@ -1,0 +1,112 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:IvkExportTool.Desktop.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:i="https://github.com/projektanker/icons.avalonia"
+        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
+        x:Class="IvkExportTool.Desktop.Views.StartWindow"
+        x:DataType="vm:StartWindowViewModel"
+        Icon="/Assets/Transneft.ico"
+        Title="IvkExportTool - Выбор способа подключения"
+        Width="460" Height="360"
+        MinWidth="460" MinHeight="360"
+        WindowStartupLocation="CenterScreen"
+        CanResize="False"
+        SystemDecorations="None"
+        TransparencyLevelHint="Transparent"
+        Background="Transparent"
+        ExtendClientAreaToDecorationsHint="True">
+
+  <Design.DataContext>
+    <vm:StartWindowViewModel/>
+  </Design.DataContext>
+
+  <Grid>
+    <!-- Основная карточка окна -->
+    <Border CornerRadius="{StaticResource RadiusXLarge}"
+            Background="{StaticResource BackgroundBrush}"
+            BoxShadow="0 4 24 0 #40000000"
+            Margin="16"
+            ClipToBounds="True">
+
+      <Grid RowDefinitions="Auto,*">
+
+        <!-- Заголовок с кнопкой закрытия (drag area) -->
+        <Border Grid.Row="0"
+                x:Name="TitleBar"
+                Background="{StaticResource SurfaceVariantBrush}"
+                CornerRadius="12,12,0,0"
+                Padding="20,12">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Grid.Column="0"
+                       Text="Выбор способа подключения"
+                       Classes="h4"
+                       Foreground="{StaticResource TextPrimaryBrush}"
+                       VerticalAlignment="Center"/>
+
+            <!-- Кнопка закрытия -->
+            <Button Grid.Column="1"
+                    x:Name="CloseButton"
+                    Classes="window-close-button"
+                    Width="28"
+                    Height="28"
+                    Padding="0"
+                    ToolTip.Tip="Закрыть приложение">
+              <i:Icon Value="fa-solid fa-xmark"
+                     FontSize="18"/>
+            </Button>
+          </Grid>
+        </Border>
+
+        <!-- Контент с выбором -->
+        <StackPanel Grid.Row="1"
+                    Spacing="16"
+                    Margin="24,32,24,24"
+                    VerticalAlignment="Center">
+
+          <!-- Кнопка ручной настройки -->
+          <Button Classes="primary"
+                  Command="{Binding ManualConnectionCommand}"
+                  HorizontalAlignment="Stretch"
+                  Height="80">
+            <Grid ColumnDefinitions="Auto,*">
+              <i:Icon Grid.Column="0"
+                     Value="fa-solid fa-hand"
+                     FontSize="36"
+                     Margin="20,0,0,0"
+                     VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="1"
+                         Text="Ручная настройка подключения"
+                         Classes="h5"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center"
+                         Margin="0,0,20,0"/>
+            </Grid>
+          </Button>
+
+          <!-- Кнопка автоподключения -->
+          <Button Classes="secondary"
+                  Command="{Binding AutoConnectionCommand}"
+                  HorizontalAlignment="Stretch"
+                  Height="80">
+            <Grid ColumnDefinitions="Auto,*">
+              <i:Icon Grid.Column="0"
+                     Value="fa-solid fa-robot"
+                     FontSize="36"
+                     Margin="20,0,0,0"
+                     VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="1"
+                         Text="Автоподключение"
+                         Classes="h5"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center"
+                         Margin="0,0,20,0"/>
+            </Grid>
+          </Button>
+
+        </StackPanel>
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

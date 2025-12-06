@@ -8,6 +8,8 @@
   - [Interfaces](#interfaces)
   - [Models](#models)
   - [Enums](#enums)
+  - [Constants](#constants)
+  - [Security](#security)
 - [Infrastructure Layer](#infrastructure-layer)
   - [Services](#services)
 - [Desktop Layer](#desktop-layer)
@@ -356,6 +358,34 @@ var options = new ExportOptions
 
 ---
 
+#### Credential
+
+**Namespace**: `IvkExportTool.Core.Models`
+
+Учётные данные для подключения к базе данных.
+
+```csharp
+public record Credential(string Username, string Password);
+```
+
+##### Properties
+
+| Свойство | Тип | Описание |
+|----------|-----|----------|
+| `Username` | `string` | Имя пользователя MySQL |
+| `Password` | `string` | Пароль пользователя |
+
+**Example**:
+
+```csharp
+var credential = new Credential("root", "password123");
+Console.WriteLine(credential.Username); // "root"
+```
+
+> **Примечание**: Этот record используется для хранения расшифрованных учётных данных в `DefaultCredentials.List`.
+
+---
+
 #### ExportResult
 
 **Namespace**: `IvkExportTool.Core.Models`
@@ -451,6 +481,123 @@ public enum ConnectionStatus
 | `Connecting` | Процесс подключения |
 | `Connected` | Подключение установлено |
 | `Error` | Ошибка подключения |
+
+---
+
+### Constants
+
+#### DefaultCredentials
+
+**Namespace**: `IvkExportTool.Core.Constants`
+
+Предустановленные учётные данные для автоподключения к БД ИВК.
+
+```csharp
+public static class DefaultCredentials
+{
+    public static IReadOnlyList<Credential> List { get; }
+}
+```
+
+##### Properties
+
+| Свойство | Тип | Описание |
+|----------|-----|----------|
+| `List` | `IReadOnlyList<Credential>` | Список учётных данных (расшифровывается при первом обращении) |
+
+##### Implementation Details
+
+- Credentials хранятся в зашифрованном виде как `byte[][]`
+- Расшифровка происходит lazy при первом обращении к `List`
+- Используется AES-256 шифрование через `CredentialProtector`
+- Результат кешируется для повторного использования
+
+**Example**:
+
+```csharp
+// Получение списка credentials для автоподключения
+foreach (var credential in DefaultCredentials.List)
+{
+    var config = new ConnectionConfig
+    {
+        Host = host,
+        Port = port,
+        Username = credential.Username,
+        Password = credential.Password
+    };
+
+    if (await databaseService.TestConnectionAsync(config))
+    {
+        // Успешное подключение
+        break;
+    }
+}
+```
+
+---
+
+### Security
+
+#### CredentialProtector
+
+**Namespace**: `IvkExportTool.Core.Security`
+
+**Access**: `internal` (не доступен извне сборки)
+
+Защита учётных данных с использованием AES-256 шифрования.
+
+```csharp
+internal static class CredentialProtector
+{
+    internal static string Unprotect(byte[] encryptedData);
+    internal static byte[] Protect(string plainText);
+}
+```
+
+##### Methods
+
+**Unprotect**
+
+Расшифровывает данные.
+
+```csharp
+internal static string Unprotect(byte[] encryptedData)
+```
+
+| Параметр | Тип | Описание |
+|----------|-----|----------|
+| `encryptedData` | `byte[]` | Зашифрованные данные (IV + ciphertext) |
+
+**Returns**: `string` — расшифрованная строка
+
+---
+
+**Protect**
+
+Шифрует данные (используется для генерации зашифрованных констант).
+
+```csharp
+internal static byte[] Protect(string plainText)
+```
+
+| Параметр | Тип | Описание |
+|----------|-----|----------|
+| `plainText` | `string` | Исходная строка для шифрования |
+
+**Returns**: `byte[]` — зашифрованные данные (IV + ciphertext)
+
+##### Implementation Details
+
+- **Алгоритм**: AES-256 в режиме CBC с PKCS7 padding
+- **Ключ**: Собирается из 8 частей (по 4 байта), затем хешируется SHA256
+- **IV**: Генерируется случайно и хранится в начале зашифрованных данных
+- **Очистка памяти**: Ключ очищается после использования через `Array.Clear()`
+
+**Структура зашифрованных данных**:
+
+```
+[IV: 16 bytes][Ciphertext: N bytes]
+```
 
 ---
 

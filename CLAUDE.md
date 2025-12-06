@@ -11,6 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **.NET 10.0** (SDK 10.0.0)
 - **Avalonia UI 11.3.8** - кроссплатформенный GUI фреймворк
 - **MySqlConnector 2.4.0** - подключение к MySQL базам данных
+- **Config.Net 5.2.1** - управление конфигурацией приложения
 - **CommunityToolkit.Mvvm 8.2.1** - MVVM паттерн
 - **NUnit 4.2.2** - тестирование
 - **FluentAssertions 8.8.0** - assertion библиотека для тестов
@@ -26,10 +27,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 IvkExportTool/
 ├── src/
 │   ├── IvkExportTool.Core/          # Domain Layer
-│   │   ├── Models/                  # Бизнес-модели (ConnectionConfig, DatabaseInfo, TableInfo, ExportOptions, ExportResult)
+│   │   ├── Models/                  # Бизнес-модели (ConnectionConfig, DatabaseInfo, TableInfo, Credential)
 │   │   ├── Interfaces/              # Интерфейсы сервисов (IDatabaseService, IExportService)
+│   │   ├── Constants/               # Константы (DefaultCredentials - зашифрованные учётные данные)
+│   │   ├── Security/                # Безопасность (CredentialProtector - AES шифрование)
 │   │   └── Enums/                   # Перечисления (ExportFormat, ConnectionStatus)
 │   ├── IvkExportTool.Infrastructure/  # Data Access Layer
+│   │   ├── Configuration/           # Конфигурация (ISettingsStore, SettingsStoreFactory)
 │   │   └── Services/                # Реализация сервисов (MySqlDatabaseService, SqlExportService)
 │   └── IvkExportTool.Desktop/       # Presentation Layer
 │       ├── ViewModels/              # MVVM ViewModels (CommunityToolkit.Mvvm)
@@ -70,7 +74,14 @@ IvkExportTool/
   - Несколько таблиц: `ИмяБазыДанных_ДатаВремя.sql`
 - Последняя использованная папка сохраняется в настройках
 - По умолчанию (при первом запуске) используется текущая директория приложения
-- Настройки сохраняются в `appsettings.json` в поле `LastExportDirectory`
+- Настройки сохраняются в `settings.json` в поле `LastExportDirectory`
+
+**Таймер и прогресс экспорта**:
+- Общий таймер показывает время экспорта всех выбранных таблиц
+- Обновление прогресса происходит каждую секунду (по времени, а не по количеству строк)
+- Общий `Stopwatch` передается через всю цепочку методов экспорта в `SqlExportService` (см. `src/IvkExportTool.Infrastructure/Services/SqlExportService.cs:20-60`)
+- UI показывает упрощенную строку состояния: детальное сообщение и время в одной строке
+- Убрана информация о текущей таблице и количестве обработанных строк для упрощения интерфейса
 
 ### Dependency Injection
 
@@ -83,18 +94,95 @@ services.AddSingleton<IDatabaseService, MySqlDatabaseService>();
 services.AddSingleton<IExportService, SqlExportService>();
 
 // Регистрация ViewModels
+services.AddTransient<StartWindowViewModel>();
 services.AddTransient<ConnectionWindowViewModel>();
+services.AddTransient<AutoConnectionWindowViewModel>();
 services.AddTransient<MainWindowViewModel>();
 ```
 
 ViewModels получают зависимости через конструктор. Сервисы регистрируются как Singleton, ViewModels как Transient.
 
-**Важная архитектурная особенность**: Приложение имеет два окна (ConnectionWindow и MainWindow), которые переключаются друг на друга с сохранением позиции на том же мониторе. При смене подключения главное окно закрывается и открывается окно подключения. Логика переключения окон реализована в `App.axaml.cs`.
+### Система окон и навигация
+
+Приложение использует систему из четырех окон с интеллектуальной навигацией:
+
+#### Окна приложения
+
+1. **StartWindow** (460x360) - стартовое окно выбора способа подключения
+   - Две большие кнопки: "Ручная настройка подключения" и "Автоподключение"
+   - События: `ManualConnectionRequested`, `AutoConnectionRequested`
+   - ViewModel: `StartWindowViewModel`
+
+2. **ConnectionWindow** (460x360) - окно ручной настройки подключения
+   - Поля ввода: хост, порт, логин, пароль
+   - Кнопки: "Тест подключения", "Подключиться"
+   - Кнопка возврата на стартовое окно (слева от крестика)
+   - **Валидация полей**: незаполненные поля подсвечиваются красной рамкой, кнопки заблокированы
+   - События: `ConnectionSucceeded`, `BackRequested`
+   - ViewModel: `ConnectionWindowViewModel`
+   - Заголовок: "Подключение к БД ИВК"
+
+3. **AutoConnectionWindow** (460x360) - окно автоподключения
+   - Поля ввода: хост, порт (загружаются из сохранённых настроек)
+   - Статус подключения и индикатор загрузки
+   - Кнопки: "Отмена" (активна только во время перебора), "Автоподключение"
+   - Кнопка возврата на стартовое окно (слева от крестика)
+   - **Валидация полей**: незаполненные поля подсвечиваются красной рамкой, кнопка заблокирована
+   - Автоматический перебор зашифрованных учётных данных из `DefaultCredentials.List`
+   - Таймаут подключения: 5 секунд на каждую попытку
+   - Отображение прогресса: "Попытка N из M..."
+   - События: `ConnectionSucceeded`, `BackRequested`
+   - ViewModel: `AutoConnectionWindowViewModel`
+   - Заголовок: "Автоподключение к БД ИВК"
+
+4. **MainWindow** - главное окно работы с базой данных
+   - Список баз данных и таблиц
+   - Экспорт выбранных таблиц
+   - Смена подключения через меню
+   - ViewModel: `MainWindowViewModel`
+
+#### Схема навигации
+
+```
+StartWindow (выбор способа подключения)
+    ├─> ConnectionWindow (ручное подключение) ─┐
+    └─> AutoConnectionWindow (автоподключение) ─┤
+                                                 ├─> MainWindow (работа с БД)
+                                                 │
+                                    [Смена подключения] ──> StartWindow
+```
+
+#### Логика переключения окон
+
+Реализована в `App.axaml.cs` (см. `src/IvkExportTool.Desktop/App.axaml.cs:67-272`):
+
+**Методы навигации**:
+- `ShowStartWindow()` - показывает стартовое окно выбора способа подключения
+- `ShowConnectionWindow()` - показывает окно ручной настройки подключения
+- `ShowAutoConnectionWindow()` - показывает окно автоподключения
+- `SaveCurrentWindowPosition()` - сохраняет позицию любого активного окна
+- `CloseAllWindows()` - закрывает все окна подключения (кроме MainWindow)
+- `RestoreWindowPositionOnSameScreen()` - восстанавливает позицию окна на том же мониторе
+
+**Обработчики событий**:
+- `OnManualConnectionRequested` - переход на окно ручного подключения
+- `OnAutoConnectionRequested` - переход на окно автоподключения
+- `OnBackFromConnectionRequested` - возврат со страницы ручного подключения на стартовое окно
+- `OnBackFromAutoConnectionRequested` - возврат со страницы автоподключения на стартовое окно
+- `OnConnectionSucceeded` - успешное подключение (переход на главное окно)
+- `OnChangeConnectionRequested` - смена подключения из главного окна (возврат на стартовое окно)
+
+**Особенности реализации**:
+- Все окна открываются на том же мониторе с сохранением центральной позиции
+- При переключении окон старое закрывается только ПОСЛЕ открытия нового для плавного перехода
+- Позиция окна сохраняется в `_lastWindowPosition` и восстанавливается через `RestoreWindowPositionOnSameScreen()`
+- Используется `WindowStartupLocation = WindowStartupLocation.Manual` для ручного позиционирования
 
 **Коммуникация между ViewModels**:
-- `ConnectionWindowViewModel.ConnectionSucceeded` - событие успешного подключения к БД (передаёт ConnectionConfig)
-- `MainWindowViewModel.ChangeConnectionRequested` - событие запроса смены подключения
-- `SaveWindowPosition()` и `RestoreWindowPositionOnSameScreen()` в `App.axaml.cs:177-214` обеспечивают сохранение позиции окна при переключении между окнами на том же мониторе
+- `StartWindowViewModel.ManualConnectionRequested` / `AutoConnectionRequested` - выбор типа подключения
+- `ConnectionWindowViewModel.ConnectionSucceeded` / `BackRequested` - результат ручного подключения
+- `AutoConnectionWindowViewModel.ConnectionSucceeded` / `BackRequested` - результат автоподключения
+- `MainWindowViewModel.ChangeConnectionRequested` - запрос смены подключения
 
 ### UI Модели и паттерны
 
@@ -123,7 +211,110 @@ ViewModels получают зависимости через конструкт
 
 Автоматическое обновление: при изменении `IsSelected` у любой `TableItemViewModel` вызывается `UpdateSelectionState()`, который пересчитывает состояние чекбокса в заголовке.
 
-### Конфигурационные файлы
+#### Валидация полей подключения
+
+Реализована в `ConnectionWindowViewModel` и `AutoConnectionWindowViewModel`:
+
+**Свойства валидации** (вычисляемые):
+- `IsHostValid` - хост не пустой
+- `IsPortValid` - порт не пустой, число от 1 до 65535
+- `IsUsernameValid` - логин не пустой (только в ConnectionWindow)
+- `IsPasswordValid` - пароль не пустой (только в ConnectionWindow)
+- `CanConnect` - все поля валидны и не идёт загрузка
+
+**UI реализация**:
+- TextBox получает класс `invalid` через `Classes.invalid="{Binding !IsHostValid}"`
+- Стиль `TextBox.invalid` задаёт красную рамку (`ErrorBrush`)
+- Кнопки привязаны к `IsEnabled="{Binding CanConnect}"`
+
+**Атрибуты CommunityToolkit.Mvvm**:
+```csharp
+[ObservableProperty]
+[NotifyPropertyChangedFor(nameof(IsHostValid))]
+[NotifyPropertyChangedFor(nameof(CanConnect))]
+private string _host = "";
+```
+
+При изменении любого поля автоматически пересчитываются свойства валидации.
+
+#### Версионирование приложения
+
+Версия приложения отображается в заголовке главного окна через свойство `WindowTitle` в `MainWindowViewModel` (см. `src/IvkExportTool.Desktop/ViewModels/MainWindowViewModel.cs:89-97`):
+
+- **Источник версии**: извлекается из `Assembly.GetExecutingAssembly().GetName().Version`
+- **Формат отображения**: `IvkExportTool v{Major}.{Minor}.{Build} - Подключение к БД ИВК`
+- **Значение по умолчанию**: `v0.0.0` (если версия не установлена)
+- **Установка версии в CI/CD**: версия устанавливается при сборке релиза через параметры `/p:Version`, `/p:AssemblyVersion`, `/p:FileVersion`
+- **Источник версии для релизов**: извлекается из git-тега (например, тег `v1.0.0` → версия `1.0.0`)
+- **Версия для dev-сборок**: `0.0.0-dev` (при сборке без тега)
+
+Реализация:
+```csharp
+public string WindowTitle
+{
+    get
+    {
+        var version = Assembly.GetExecutingAssembly().GetName().Version;
+        var versionString = version != null ? $"v{version.Major}.{version.Minor}.{version.Build}" : "v0.0.0";
+        return $"IvkExportTool {versionString} - Подключение к БД ИВК";
+    }
+}
+```
+
+### Система настроек приложения (Config.Net)
+
+Приложение использует библиотеку [Config.Net](https://github.com/aloneguid/config) для хранения настроек в JSON файле.
+
+#### Расположение файла настроек
+
+Файл `settings.json` хранится в стандартных папках конфигурации ОС:
+- **Windows**: `%APPDATA%\IvkExportTool\settings.json`
+- **Linux/macOS**: `~/.config/IvkExportTool/settings.json`
+
+#### Структура настроек
+
+```json
+{
+  "Connection": {
+    "Host": "192.168.1.100",
+    "Port": 3306,
+    "Username": "admin",
+    "EncryptedPassword": "base64..."
+  },
+  "LastExportDirectory": "/path/to/exports"
+}
+```
+
+**Важно**: По умолчанию все поля подключения пустые. Fallback на дефолтные значения убран для безопасности.
+
+#### Архитектура
+
+**Файлы**:
+- `Infrastructure/Configuration/ISettingsStore.cs` - интерфейс для Config.Net
+- `Infrastructure/Configuration/SettingsStoreFactory.cs` - фабрика для создания хранилища настроек
+- `Infrastructure/Services/AppSettingsService.cs` - сервис-адаптер, реализующий `IAppSettingsService`
+
+**Использование Config.Net**:
+```csharp
+// Создание хранилища настроек
+var settings = new ConfigurationBuilder<ISettingsStore>()
+    .UseJsonFile(settingsPath)
+    .Build();
+
+// Чтение/запись настроек (автоматически сохраняется в JSON)
+settings.Connection.Host = "localhost";
+settings.LastExportDirectory = "/exports";
+```
+
+#### Шифрование паролей
+
+Пароли в настройках хранятся в зашифрованном виде:
+- **Windows**: DPAPI (`ProtectedData`, `DataProtectionScope.CurrentUser`)
+- **Linux/macOS**: AES-256 в режиме CBC с ключом на основе имени пользователя и машины
+
+**Важно**: Зашифрованный пароль с Windows НЕ совместим с Linux и наоборот.
+
+### Конфигурационные файлы проекта
 
 - **`Directory.Build.props`** - общие настройки для всех проектов (LangVersion, Nullable, метаданные)
 - **`global.json`** - версия .NET SDK (10.0.0)
@@ -277,17 +468,7 @@ dotnet publish src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj \
 
 ### Дизайн-система
 
-Проект использует собственную дизайн-систему на основе Material Design 3 с сине-серой приглушённой палитрой. Полное описание в файле `design.md`:
-
-- **Primary цвет**: `#546e7a` (84, 110, 122) - основные интерактивные элементы
-- **Secondary цвет**: `#78909c` (120, 144, 156) - вторичные элементы
-- **Тональная палитра**: 20-95 уровней для создания визуальной иерархии
-- **Функциональные цвета**: Success `#4caf50`, Error `#f44336`, Warning `#ff9800`, Info `#2196f3`
-- **Шрифт**: Roboto / Inter (для Avalonia)
-- **Border Radius**: 6-8px для кнопок и полей, 12px для модальных окон
-- **Spacing**: 8px grid система (4px, 8px, 16px, 24px, 32px, 48px, 64px)
-
-При создании новых UI элементов обязательно следовать дизайн-системе из `design.md`.
+При создании новых UI элементов обязательно следовать дизайн-системе из `design.md` (Material Design 3, сине-серая палитра с primary `#546e7a`).
 
 ## CI/CD
 
@@ -304,43 +485,62 @@ git push origin v1.0.0
 # GitHub Actions автоматически создаст релиз с артефактами для Windows и Linux
 ```
 
-## Ключевые зависимости
+### Процесс публикации релиза
 
-### Core проект
-- Не имеет внешних зависимостей (только .NET 10.0)
+**Извлечение версии** (см. `.github/workflows/publish.yml:36-48`):
+- Версия извлекается из git-тега автоматически: `VERSION="${GITHUB_REF#refs/tags/}"`
+- Если запуск без тега (например, через `workflow_dispatch`), используется версия `0.0.0-dev`
+- Версия передается в процесс сборки через параметры `/p:Version`, `/p:AssemblyVersion`, `/p:FileVersion`
 
-### Infrastructure проект
-- `MySqlConnector` 2.4.0 - подключение к MySQL
+**Структура релизных архивов**:
+- Архивы содержат исполняемый файл **сразу в корне**
+- Нет вложенных директорий типа `runtime/` - пользователь может сразу запустить приложение после распаковки
+- Включены файлы:
+  - `IvkExportTool.exe` (Windows) или `IvkExportTool` (Linux)
+- Настройки приложения хранятся отдельно в `%APPDATA%` (Windows) или `~/.config` (Linux)
 
-### Desktop проект
-- `Avalonia` 11.3.8 - UI фреймворк
-- `Avalonia.Desktop` 11.3.8 - поддержка десктопных платформ
-- `Avalonia.Themes.Fluent` 11.3.8 - Fluent дизайн тема
-- `Avalonia.Controls.DataGrid` 11.3.8 - таблица данных
-- `Avalonia.Fonts.Inter` 11.3.8 - шрифт Inter
-- `CommunityToolkit.Mvvm` 8.2.1 - MVVM паттерн
-- `Microsoft.Extensions.DependencyInjection` 9.0.10 - DI контейнер
-- `Microsoft.Extensions.Configuration.Json` 9.0.10 - конфигурация
+**Форматы архивов**:
+- Windows: `.zip` архив (создается через `Compress-Archive`)
+- Linux: `.tar.gz` архив (создается через `tar -czf`)
 
-### Tests проект
-- `NUnit` 4.2.2 - фреймворк для тестирования
-- `Moq` 4.20.72 - мокирование
-- `FluentAssertions` 8.8.0 - assertion библиотека
-- `coverlet.collector` 6.0.2 - покрытие кода
+**Именование артефактов**:
+- Windows: `IvkExportTool-win-x64.zip`
+- Linux: `IvkExportTool-linux-x64.tar.gz`
 
 ## Важные замечания
 
 ### Безопасность
-- Строки подключения к базам данных не должны коммититься в репозиторий
-- Использовать `appsettings.Local.json` для локальных настроек (игнорируется Git)
-- Не хранить пароли и ключи в коде
 
-### Производительность
-- Экспорт больших таблиц должен выполняться асинхронно
-- Использовать потоковую обработку данных для минимизации потребления памяти
-- Применять пагинацию для больших выборок
+#### Шифрование учётных данных для автоподключения
+
+Учётные данные для автоподключения хранятся в зашифрованном виде (см. `src/IvkExportTool.Core/Constants/DefaultCredentials.cs`):
+
+**Архитектура защиты**:
+- **Алгоритм**: AES-256 в режиме CBC с PKCS7 padding
+- **Хранение**: credentials хранятся как `byte[][]` (IV + ciphertext для каждой пары)
+- **Ключ**: собирается из 8 частей, разбросанных по коду, затем хешируется SHA256
+- **Расшифровка**: lazy-загрузка при первом обращении к `DefaultCredentials.List`
+
+**Файлы**:
+- `Core/Security/CredentialProtector.cs` - класс шифрования/расшифровки
+- `Core/Constants/DefaultCredentials.cs` - зашифрованные credentials
+- `Core/Models/Credential.cs` - модель учётных данных
+
+**Уровень защиты**:
+- ✅ Защищает от: `strings`, `grep`, hex-редакторов, случайного просмотра
+- ✅ Усложняет: статический анализ в ILSpy/dnSpy
+- ⚠️ Не защищает от: отладчика с breakpoint на `Unprotect()`, дампа памяти
+
+**Добавление новых credentials**:
+1. Запустить утилиту `tools/EncryptHelper` (создать временно)
+2. Добавить новую пару в массив credentials
+3. Скопировать сгенерированный `byte[]` в `DefaultCredentials.EncryptedCredentials`
+
+#### Общие правила
+- Строки подключения к базам данных не должны коммититься в репозиторий
+- Настройки хранятся в `%APPDATA%` (Windows) или `~/.config` (Linux), а не в папке приложения
+- Не хранить пароли и ключи в коде в открытом виде
 
 ### Тестирование
-- Целевое покрытие кода тестами > 70%
-- Unit тесты для всей бизнес-логики в Core и Infrastructure
-- Mock'ировать все внешние зависимости (база данных, файловая система)
+
+Не пытайся запустить проект для проверки визуальной части. Проект сделан на технологии Avalonia и ты не сможешь получить доступ к фронт-части.

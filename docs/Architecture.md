@@ -76,9 +76,11 @@ IvkExportTool построен на основе **Clean Architecture** с тр�
 **Зависимости**: Отсутствуют (чистый .NET)
 
 **Содержит**:
-- Модели данных (`ConnectionConfig`, `TableInfo`, `ExportOptions`)
+- Модели данных (`ConnectionConfig`, `TableInfo`, `ExportOptions`, `Credential`)
 - Интерфейсы сервисов (`IDatabaseService`, `IExportService`)
 - Перечисления (`ExportFormat`, `ConnectionStatus`)
+- Константы (`DefaultCredentials` — зашифрованные учётные данные)
+- Безопасность (`CredentialProtector` — AES-256 шифрование)
 
 **Правила**:
 - ❌ Не зависит от внешних библиотек
@@ -586,6 +588,86 @@ private void AddTable(TableInfo info)
     Tables.Add(new TableItemViewModel(info));
 }
 ```
+
+## Безопасность
+
+### Шифрование учётных данных
+
+Для автоподключения к БД используются предустановленные учётные данные, которые хранятся в зашифрованном виде:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    DefaultCredentials                        │
+│                                                              │
+│  ┌────────────────┐     ┌─────────────────────────────────┐ │
+│  │  Encrypted     │────▶│     CredentialProtector         │ │
+│  │  byte[][]      │     │                                 │ │
+│  │  (IV+cipher)   │     │  ┌───────────────────────────┐  │ │
+│  └────────────────┘     │  │  AES-256 CBC + PKCS7      │  │ │
+│                          │  │                           │  │ │
+│                          │  │  Key: SHA256(parts[0..7]) │  │ │
+│                          │  └───────────────────────────┘  │ │
+│                          └─────────────────────────────────┘ │
+│                                       │                      │
+│                                       ▼                      │
+│                          ┌─────────────────────────────────┐ │
+│                          │  List<Credential> (lazy load)   │ │
+│                          │  - Username                     │ │
+│                          │  - Password                     │ │
+│                          └─────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Архитектура защиты
+
+**CredentialProtector** (`Core/Security/CredentialProtector.cs`):
+
+```csharp
+internal static class CredentialProtector
+{
+    // Ключ собирается из 8 частей, рассеянных по коду
+    private static readonly byte[] KeyPart1 = { 0x49, 0x76, 0x6B, 0x45 };
+    // ... KeyPart2-8
+
+    internal static string Unprotect(byte[] encryptedData)
+    {
+        var key = AssembleKey();  // Собирает и хеширует ключ
+        // AES-256 CBC расшифровка
+    }
+
+    private static byte[] AssembleKey()
+    {
+        // Собирает ключ из частей
+        // Хеширует SHA256 для получения 256-bit ключа
+    }
+}
+```
+
+**DefaultCredentials** (`Core/Constants/DefaultCredentials.cs`):
+
+```csharp
+public static class DefaultCredentials
+{
+    // Зашифрованные данные (IV + ciphertext)
+    private static readonly byte[][] EncryptedCredentials = [...];
+
+    // Lazy-загрузка при первом обращении
+    public static IReadOnlyList<Credential> List =>
+        _cachedList ??= DecryptCredentials();
+}
+```
+
+### Уровень защиты
+
+| Защищает от | Не защищает от |
+|-------------|----------------|
+| ✅ `strings` утилиты | ❌ Отладчик с breakpoint |
+| ✅ `grep` по паролям | ❌ Дамп памяти процесса |
+| ✅ Hex-редакторов | ❌ Опытный реверс-инженер |
+| ✅ Случайного просмотра кода | |
+| ✅ Статического анализа (ILSpy) | |
+
+> **Важно**: 100% защита credentials в клиентском приложении невозможна. Шифрование значительно усложняет извлечение, но не является абсолютной защитой.
 
 ## Дизайн-система
 

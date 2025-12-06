@@ -5,10 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:i="https://github.com/projektanker/icons.avalonia"
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
-        x:Class="IvkExportTool.Desktop.Views.ConnectionWindow"
-        x:DataType="vm:ConnectionWindowViewModel"
+        x:Class="IvkExportTool.Desktop.Views.AutoConnectionWindow"
+        x:DataType="vm:AutoConnectionWindowViewModel"
         Icon="/Assets/Transneft.ico"
-        Title="IvkExportTool - Подключение к БД ИВК"
+        Title="IvkExportTool - Автоподключение к БД ИВК"
         Width="460" Height="360"
         MinWidth="460" MinHeight="360"
         WindowStartupLocation="CenterScreen"
@@ -19,7 +19,7 @@
         ExtendClientAreaToDecorationsHint="True">
 
   <Design.DataContext>
-    <vm:ConnectionWindowViewModel/>
+    <vm:AutoConnectionWindowViewModel/>
   </Design.DataContext>
 
   <Grid>
@@ -40,7 +40,7 @@
                 Padding="20,12">
           <Grid ColumnDefinitions="*,Auto,Auto">
             <TextBlock Grid.Column="0"
-                       Text="Подключение к БД ИВК"
+                       Text="Автоподключение к БД ИВК"
                        Classes="h4"
                        Foreground="{StaticResource TextPrimaryBrush}"
                        VerticalAlignment="Center"/>
@@ -79,7 +79,7 @@
                     Margin="24,20,24,24">
 
           <!-- Параметры подключения -->
-          <Grid ColumnDefinitions="100,*" RowDefinitions="Auto,Auto,Auto,Auto">
+          <Grid ColumnDefinitions="100,*" RowDefinitions="Auto,Auto">
             <!-- Host -->
             <TextBlock Grid.Row="0" Grid.Column="0"
                        Text="Хост:"
@@ -97,49 +97,45 @@
                        Text="Порт:"
                        Classes="label"
                        VerticalAlignment="Center"
-                       Margin="0,0,12,12"/>
+                       Margin="0,0,12,0"/>
             <TextBox Grid.Row="1" Grid.Column="1"
                      Text="{Binding Port, Mode=TwoWay}"
                      Classes.invalid="{Binding !IsPortValid}"
-                     Watermark="3306"
-                     Margin="0,0,0,12"/>
-
-            <!-- Username -->
-            <TextBlock Grid.Row="2" Grid.Column="0"
-                       Text="Логин:"
-                       Classes="label"
-                       VerticalAlignment="Center"
-                       Margin="0,0,12,12"/>
-            <TextBox Grid.Row="2" Grid.Column="1"
-                     Text="{Binding Username, Mode=TwoWay}"
-                     Classes.invalid="{Binding !IsUsernameValid}"
-                     Watermark="root"
-                     Margin="0,0,0,12"/>
-
-            <!-- Password -->
-            <TextBlock Grid.Row="3" Grid.Column="0"
-                       Text="Пароль:"
-                       Classes="label"
-                       VerticalAlignment="Center"
-                       Margin="0,0,12,0"/>
-            <TextBox Grid.Row="3" Grid.Column="1"
-                     Text="{Binding Password, Mode=TwoWay}"
-                     Classes.invalid="{Binding !IsPasswordValid}"
-                     PasswordChar="●"
-                     Watermark="password"/>
+                     Watermark="3306"/>
           </Grid>
+
+          <!-- Информация о статусе -->
+          <Border Background="{StaticResource SurfaceBrush}"
+                  CornerRadius="{StaticResource RadiusMedium}"
+                  Padding="16">
+            <StackPanel Spacing="12">
+              <TextBlock Text="{Binding StatusMessage}"
+                         Classes="body"
+                         Foreground="{StaticResource TextPrimaryBrush}"
+                         TextWrapping="Wrap"
+                         TextAlignment="Center"
+                         HorizontalAlignment="Center"/>
+
+              <!-- Индикатор загрузки -->
+              <ProgressBar IsIndeterminate="{Binding IsLoading}"
+                           IsVisible="{Binding IsLoading}"
+                           Height="4"/>
+            </StackPanel>
+          </Border>
 
           <!-- Кнопки -->
           <Grid ColumnDefinitions="*,*" Margin="0,4,0,0">
+            <!-- Кнопка отмены -->
             <Button Grid.Column="0"
                     Classes="secondary"
-                    Command="{Binding TestConnectionCommand}"
-                    IsEnabled="{Binding CanConnect}"
+                    Command="{Binding CancelCommand}"
+                    IsEnabled="{Binding CanCancel}"
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
                     Margin="0,0,8,0"
-                    Content="Тест подключения" />
+                    Content="Отмена" />
 
+            <!-- Кнопка автоподключения -->
             <Button Grid.Column="1"
                     Classes="primary"
                     Command="{Binding ConnectCommand}"
@@ -147,7 +143,7 @@
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
                     Margin="8,0,0,0"
-                    Content="Подключение" />
+                    Content="Автоподключение" />
           </Grid>
 
         </StackPanel>

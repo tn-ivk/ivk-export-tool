@@ -17,19 +17,35 @@ public partial class ConnectionWindowViewModel : ViewModelBase
 
     // Параметры подключения
     [ObservableProperty]
-    private string _host = "192.168.233.101";
+    [NotifyPropertyChangedFor(nameof(IsHostValid))]
+    [NotifyPropertyChangedFor(nameof(CanConnect))]
+    private string _host = "";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsPortValid))]
+    [NotifyPropertyChangedFor(nameof(CanConnect))]
     private string _port = "3306";
 
     [ObservableProperty]
-    private string _username = "user";
+    [NotifyPropertyChangedFor(nameof(IsUsernameValid))]
+    [NotifyPropertyChangedFor(nameof(CanConnect))]
+    private string _username = "";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsPasswordValid))]
+    [NotifyPropertyChangedFor(nameof(CanConnect))]
     private string _password = "";
+
+    // Валидация полей
+    public bool IsHostValid => !string.IsNullOrWhiteSpace(Host);
+    public bool IsPortValid => !string.IsNullOrWhiteSpace(Port) && int.TryParse(Port, out var p) && p > 0 && p <= 65535;
+    public bool IsUsernameValid => !string.IsNullOrWhiteSpace(Username);
+    public bool IsPasswordValid => !string.IsNullOrWhiteSpace(Password);
+    public bool CanConnect => IsHostValid && IsPortValid && IsUsernameValid && IsPasswordValid && !IsLoading;
 
     // Состояние
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanConnect))]
     private bool _isLoading;
 
     [ObservableProperty]
@@ -41,6 +57,7 @@ public partial class ConnectionWindowViewModel : ViewModelBase
     // События
     public event EventHandler<ConnectionConfig>? ConnectionSucceeded;
     public event EventHandler<NotificationRequestedEventArgs>? NotificationRequested;
+    public event EventHandler? BackRequested;
 
     public ConnectionWindowViewModel() : this(null!, null!)
     {
@@ -232,5 +249,11 @@ public partial class ConnectionWindowViewModel : ViewModelBase
         {
             IsLoading = false;
         }
+    }
+
+    [RelayCommand]
+    private void Back()
+    {
+        BackRequested?.Invoke(this, EventArgs.Empty);
     }
 }

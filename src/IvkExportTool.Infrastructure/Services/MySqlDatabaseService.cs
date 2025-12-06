@@ -23,6 +23,23 @@ public class MySqlDatabaseService : IDatabaseService
         }
     }
 
+    public async Task<bool> TestConnectionAsync(ConnectionConfig config, TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var connString = $"Server={config.Host};Port={config.Port};User ID={config.Username};" +
+                            $"Password={config.Password};Connection Timeout={(int)timeout.TotalSeconds};CharSet=utf8mb4;";
+
+            await using var connection = new MySqlConnection(connString);
+            await connection.OpenAsync(cancellationToken);
+            return connection.State == System.Data.ConnectionState.Open;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     public async Task<List<string>> GetDatabasesAsync(ConnectionConfig config)
     {
         var databases = new List<string>();

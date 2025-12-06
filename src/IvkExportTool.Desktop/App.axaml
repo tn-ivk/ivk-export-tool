@@ -167,6 +167,16 @@
       <Setter Property="BorderThickness" Value="2"/>
     </Style>
 
+    <!-- Invalid TextBox Style -->
+    <Style Selector="TextBox.invalid /template/ Border#PART_BorderElement">
+      <Setter Property="BorderBrush" Value="{StaticResource ErrorBrush}"/>
+      <Setter Property="BorderThickness" Value="2"/>
+    </Style>
+    <Style Selector="TextBox.invalid:focus /template/ Border#PART_BorderElement">
+      <Setter Property="BorderBrush" Value="{StaticResource ErrorBrush}"/>
+      <Setter Property="BorderThickness" Value="2"/>
+    </Style>
+
     <!-- ComboBox Styles -->
     <Style Selector="ComboBox">
       <Setter Property="Background" Value="{StaticResource BackgroundBrush}"/>
@@ -361,6 +371,26 @@
       <Setter Property="CornerRadius" Value="10"/>
       <Setter Property="Padding" Value="8,2"/>
       <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- ========== Window Close Button ========== -->
+    <Style Selector="Button.window-close-button">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+      <Setter Property="CornerRadius" Value="6"/>
+      <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+
+    <Style Selector="Button.window-close-button:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource ErrorBrush}"/>
+    </Style>
+
+    <Style Selector="Button.window-close-button:pointerover PathIcon">
+      <Setter Property="Foreground" Value="White"/>
+    </Style>
+
+    <Style Selector="Button.window-close-button:pressed /template/ ContentPresenter">
+      <Setter Property="Background" Value="#d32f2f"/>
     </Style>
 
     <!-- ========== Notification Styles ========== -->

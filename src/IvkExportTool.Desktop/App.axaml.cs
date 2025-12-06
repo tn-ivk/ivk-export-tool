@@ -11,6 +11,8 @@ using IvkExportTool.Desktop.ViewModels;
 using IvkExportTool.Desktop.Views;
 using IvkExportTool.Infrastructure.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Projektanker.Icons.Avalonia;
+using Projektanker.Icons.Avalonia.FontAwesome;
 
 namespace IvkExportTool.Desktop;
 
@@ -18,12 +20,17 @@ public partial class App : Application
 {
     public IServiceProvider? Services { get; private set; }
     private IClassicDesktopStyleApplicationLifetime? _desktop;
+    private StartWindow? _startWindow;
     private ConnectionWindow? _connectionWindow;
+    private AutoConnectionWindow? _autoConnectionWindow;
     private MainWindow? _mainWindow;
     private PixelPoint? _lastWindowPosition;
 
     public override void Initialize()
     {
+        // Регистрация провайдера иконок FontAwesome
+        IconProvider.Current.Register<FontAwesomeIconProvider>();
+
         AvaloniaXamlLoader.Load(this);
         ConfigureServices();
     }
@@ -38,7 +45,9 @@ public partial class App : Application
         services.AddSingleton<IExportService, SqlExportService>();
 
         // Регистрация ViewModels
+        services.AddTransient<StartWindowViewModel>();
         services.AddTransient<ConnectionWindowViewModel>();
+        services.AddTransient<AutoConnectionWindowViewModel>();
         services.AddTransient<MainWindowViewModel>();
 
         Services = services.BuildServiceProvider();
@@ -53,40 +62,181 @@ public partial class App : Application
             // Avoid duplicate validations from both Avalonia and the CommunityToolkit.
             DisableAvaloniaDataAnnotationValidation();
 
-            // Запускаем с окна подключения
-            ShowConnectionWindow();
+            // Запускаем со стартового окна выбора способа подключения
+            ShowStartWindow();
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private void ShowStartWindow()
+    {
+        if (_desktop == null || Services == null) return;
+
+        // Сохраняем позицию текущего окна
+        SaveCurrentWindowPosition();
+
+        var viewModel = Services.GetRequiredService<StartWindowViewModel>();
+
+        _startWindow = new StartWindow
+        {
+            DataContext = viewModel,
+            WindowStartupLocation = WindowStartupLocation.Manual
+        };
+
+        // Подписываемся на события выбора типа подключения
+        viewModel.ManualConnectionRequested += OnManualConnectionRequested;
+        viewModel.AutoConnectionRequested += OnAutoConnectionRequested;
+
+        // Обработчик для установки позиции после открытия окна
+        _startWindow.Opened += (s, e) =>
+        {
+            RestoreWindowPositionOnSameScreen(_startWindow);
+        };
+
+        // Устанавливаем новое окно как главное ДО закрытия старого
+        _desktop.MainWindow = _startWindow;
+        _startWindow.Show();
+
+        // Закрываем старые окна ПОСЛЕ установки нового главного окна (кроме текущего)
+        CloseAllWindows(_startWindow);
+    }
+
+    private void OnManualConnectionRequested(object? sender, EventArgs e)
+    {
+        ShowConnectionWindow();
+    }
+
+    private void OnAutoConnectionRequested(object? sender, EventArgs e)
+    {
+        ShowAutoConnectionWindow();
     }
 
     private void ShowConnectionWindow()
     {
         if (_desktop == null || Services == null) return;
 
+        // Сохраняем позицию текущего окна
+        SaveCurrentWindowPosition();
+
         var viewModel = Services.GetRequiredService<ConnectionWindowViewModel>();
 
         _connectionWindow = new ConnectionWindow
         {
-            DataContext = viewModel
+            DataContext = viewModel,
+            WindowStartupLocation = WindowStartupLocation.Manual
         };
 
-        // Подписываемся на событие успешного подключения
+        // Подписываемся на события
         viewModel.ConnectionSucceeded += OnConnectionSucceeded;
+        viewModel.BackRequested += OnBackFromConnectionRequested;
 
+        // Обработчик для установки позиции после открытия окна
+        _connectionWindow.Opened += (s, e) =>
+        {
+            RestoreWindowPositionOnSameScreen(_connectionWindow);
+        };
+
+        // Устанавливаем новое окно как главное ДО закрытия старого
         _desktop.MainWindow = _connectionWindow;
         _connectionWindow.Show();
+
+        // Закрываем старые окна ПОСЛЕ установки нового главного окна (кроме текущего)
+        CloseAllWindows(_connectionWindow);
+    }
+
+    private void ShowAutoConnectionWindow()
+    {
+        if (_desktop == null || Services == null) return;
+
+        // Сохраняем позицию текущего окна
+        SaveCurrentWindowPosition();
+
+        var viewModel = Services.GetRequiredService<AutoConnectionWindowViewModel>();
+
+        _autoConnectionWindow = new AutoConnectionWindow
+        {
+            DataContext = viewModel,
+            WindowStartupLocation = WindowStartupLocation.Manual
+        };
+
+        // Подписываемся на события
+        viewModel.ConnectionSucceeded += OnConnectionSucceeded;
+        viewModel.BackRequested += OnBackFromAutoConnectionRequested;
+
+        // Обработчик для установки позиции после открытия окна
+        _autoConnectionWindow.Opened += (s, e) =>
+        {
+            RestoreWindowPositionOnSameScreen(_autoConnectionWindow);
+        };
+
+        // Устанавливаем новое окно как главное ДО закрытия старого
+        _desktop.MainWindow = _autoConnectionWindow;
+        _autoConnectionWindow.Show();
+
+        // Закрываем старые окна ПОСЛЕ установки нового главного окна (кроме текущего)
+        CloseAllWindows(_autoConnectionWindow);
+    }
+
+    private void OnBackFromConnectionRequested(object? sender, EventArgs e)
+    {
+        ShowStartWindow();
+    }
+
+    private void OnBackFromAutoConnectionRequested(object? sender, EventArgs e)
+    {
+        ShowStartWindow();
+    }
+
+    private void SaveCurrentWindowPosition()
+    {
+        if (_startWindow != null && _startWindow.WindowState == WindowState.Normal)
+        {
+            _lastWindowPosition = _startWindow.Position;
+        }
+        else if (_connectionWindow != null && _connectionWindow.WindowState == WindowState.Normal)
+        {
+            _lastWindowPosition = _connectionWindow.Position;
+        }
+        else if (_autoConnectionWindow != null && _autoConnectionWindow.WindowState == WindowState.Normal)
+        {
+            _lastWindowPosition = _autoConnectionWindow.Position;
+        }
+        else if (_mainWindow != null && _mainWindow.WindowState == WindowState.Normal)
+        {
+            _lastWindowPosition = _mainWindow.Position;
+        }
+    }
+
+    private void CloseAllWindows(Window? except = null)
+    {
+        if (_startWindow != null && _startWindow != except)
+        {
+            _startWindow.Close();
+            _startWindow = null;
+        }
+
+        if (_connectionWindow != null && _connectionWindow != except)
+        {
+            _connectionWindow.Close();
+            _connectionWindow = null;
+        }
+
+        if (_autoConnectionWindow != null && _autoConnectionWindow != except)
+        {
+            _autoConnectionWindow.Close();
+            _autoConnectionWindow = null;
+        }
+
+        // Главное окно не закрываем здесь
     }
 
     private async void OnConnectionSucceeded(object? sender, ConnectionConfig connectionConfig)
     {
         if (_desktop == null || Services == null) return;
 
-        // Сохраняем позицию окна подключения
-        if (_connectionWindow != null)
-        {
-            SaveWindowPosition(_connectionWindow);
-        }
+        // Сохраняем позицию текущего окна подключения
+        SaveCurrentWindowPosition();
 
         // Создаём главное окно
         var mainViewModel = Services.GetRequiredService<MainWindowViewModel>();
@@ -116,9 +266,8 @@ public partial class App : Application
         _desktop.MainWindow = _mainWindow;
         _mainWindow.Show();
 
-        // Закрываем окно подключения
-        _connectionWindow?.Close();
-        _connectionWindow = null;
+        // Закрываем окна подключения
+        CloseAllWindows();
     }
 
     private void OnChangeConnectionRequested(object? sender, System.EventArgs e)
@@ -126,39 +275,18 @@ public partial class App : Application
         if (_desktop == null || Services == null) return;
 
         // Сохраняем позицию главного окна
-        if (_mainWindow != null)
-        {
-            SaveWindowPosition(_mainWindow);
-        }
+        SaveCurrentWindowPosition();
 
         // Сохраняем ссылку на старое окно
         var oldMainWindow = _mainWindow;
-
-        // Создаём окно подключения
-        var viewModel = Services.GetRequiredService<ConnectionWindowViewModel>();
-
-        _connectionWindow = new ConnectionWindow
-        {
-            DataContext = viewModel,
-            WindowStartupLocation = WindowStartupLocation.Manual
-        };
-
-        // Подписываемся на событие успешного подключения
-        viewModel.ConnectionSucceeded += OnConnectionSucceeded;
-
-        // Обработчик для установки позиции после открытия окна
-        _connectionWindow.Opened += (s, e) =>
-        {
-            RestoreWindowPositionOnSameScreen(_connectionWindow);
-        };
-
-        // ВАЖНО: Сначала устанавливаем новое главное окно
-        _desktop.MainWindow = _connectionWindow;
-        _connectionWindow.Show();
-
-        // Затем закрываем старое главное окно
-        oldMainWindow?.Close();
         _mainWindow = null;
+
+        // Показываем стартовое окно ПЕРЕД закрытием главного окна
+        // (ShowStartWindow устанавливает _desktop.MainWindow, что предотвращает завершение приложения)
+        ShowStartWindow();
+
+        // Закрываем главное окно ПОСЛЕ установки нового главного окна
+        oldMainWindow?.Close();
     }
 
     private void DisableAvaloniaDataAnnotationValidation()
@@ -171,17 +299,6 @@ public partial class App : Application
         foreach (var plugin in dataValidationPluginsToRemove)
         {
             BindingPlugins.DataValidators.Remove(plugin);
-        }
-    }
-
-    /// <summary>
-    /// Сохраняет позицию окна для последующего восстановления на том же мониторе
-    /// </summary>
-    private void SaveWindowPosition(Window window)
-    {
-        if (window.WindowState == WindowState.Normal)
-        {
-            _lastWindowPosition = window.Position;
         }
     }
 

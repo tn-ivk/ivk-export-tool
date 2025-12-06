@@ -1,5 +1,7 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
+using Avalonia.Input;
 using Avalonia.Threading;
 using IvkExportTool.Desktop.Enums;
 using IvkExportTool.Desktop.Events;
@@ -18,6 +20,53 @@ public partial class ConnectionWindow : Window
 
         DataContextChanged += OnDataContextChanged;
         Opened += OnWindowOpened;
+
+        // Настройка перетаскивания окна за заголовок
+        var titleBar = this.FindControl<Border>("TitleBar");
+        if (titleBar != null)
+        {
+            titleBar.PointerPressed += OnTitleBarPointerPressed;
+        }
+
+        // Настройка кнопки закрытия
+        var closeButton = this.FindControl<Button>("CloseButton");
+        if (closeButton != null)
+        {
+            closeButton.Click += OnCloseButtonClick;
+        }
+
+        // Настройка кнопки возврата
+        var backButton = this.FindControl<Button>("BackButton");
+        if (backButton != null)
+        {
+            backButton.Click += OnBackButtonClick;
+        }
+    }
+
+    private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        {
+            BeginMoveDrag(e);
+        }
+    }
+
+    private void OnCloseButtonClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        // Закрываем приложение
+        if (Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            desktop.Shutdown();
+        }
+    }
+
+    private void OnBackButtonClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        // Вызываем команду возврата в ViewModel
+        if (_viewModel is not null)
+        {
+            _viewModel.BackCommand.Execute(null);
+        }
     }
 
     private void OnWindowOpened(object? sender, EventArgs e)
@@ -83,6 +132,27 @@ public partial class ConnectionWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        // Отписываемся от событий TitleBar
+        var titleBar = this.FindControl<Border>("TitleBar");
+        if (titleBar != null)
+        {
+            titleBar.PointerPressed -= OnTitleBarPointerPressed;
+        }
+
+        // Отписываемся от кнопки закрытия
+        var closeButton = this.FindControl<Button>("CloseButton");
+        if (closeButton != null)
+        {
+            closeButton.Click -= OnCloseButtonClick;
+        }
+
+        // Отписываемся от кнопки возврата
+        var backButton = this.FindControl<Button>("BackButton");
+        if (backButton != null)
+        {
+            backButton.Click -= OnBackButtonClick;
+        }
+
         // Отписываемся при закрытии окна
         if (_viewModel is not null)
         {
