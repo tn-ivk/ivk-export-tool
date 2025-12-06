@@ -16,6 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **NUnit 4.2.2** - тестирование
 - **FluentAssertions 8.8.0** - assertion библиотека для тестов
 - **Moq 4.20.72** - мокирование зависимостей в тестах
+- **Testcontainers.MySql 4.9.0** - интеграционные тесты с реальной MySQL в Docker
 
 ## Архитектура проекта
 
@@ -40,7 +41,11 @@ IvkExportTool/
 │       ├── Views/                   # Avalonia AXAML представления
 │       └── Models/                  # UI модели и обёртки
 └── tests/
-    └── IvkExportTool.Tests/         # Unit тесты (NUnit)
+    └── IvkExportTool.Tests/         # Тесты (NUnit)
+        ├── Core/                    # Unit-тесты Core слоя
+        ├── Infrastructure/          # Unit-тесты Infrastructure слоя
+        ├── Desktop/                 # Unit-тесты Desktop слоя
+        └── Integration/             # Интеграционные тесты (Testcontainers)
 ```
 
 ### Зависимости между проектами
@@ -387,8 +392,14 @@ dotnet build --configuration Release /p:RunAnalyzers=true /p:TreatWarningsAsErro
 ### Тестирование
 
 ```bash
-# Запустить все тесты
+# Запустить все тесты (unit + integration)
 dotnet test
+
+# Запустить только unit-тесты (быстро, без Docker)
+dotnet test --filter "Category!=Integration"
+
+# Запустить только интеграционные тесты (требует Docker)
+dotnet test --filter "Category=Integration"
 
 # Запустить тесты с подробным выводом
 dotnet test --verbosity detailed
@@ -405,6 +416,24 @@ dotnet test --filter "Name=TestConnectionAsync_ValidCredentials_ReturnsSuccess"
 # Тесты с покрытием кода
 dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
 ```
+
+#### Интеграционные тесты
+
+Интеграционные тесты используют **Testcontainers** для запуска MySQL в Docker-контейнере:
+
+**Структура**:
+- `Integration/MySqlIntegrationTestBase.cs` - базовый класс с настройкой MySQL контейнера
+- `Integration/MySqlDatabaseServiceIntegrationTests.cs` - тесты для `MySqlDatabaseService`
+- `Integration/SqlExportServiceIntegrationTests.cs` - тесты для `SqlExportService`
+
+**Требования**:
+- Docker Desktop (Windows/macOS) или Docker Engine (Linux)
+- Тесты автоматически определяют Docker endpoint
+
+**Особенности**:
+- Все интеграционные тесты помечены `[Category("Integration")]`
+- Контейнер MySQL 8.0 создаётся один раз на класс тестов (`[OneTimeSetUp]`)
+- Тестовые таблицы создаются/удаляются в каждом тесте
 
 ### Сборка релиза
 
@@ -492,8 +521,18 @@ dotnet publish src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj \
 
 Проект использует GitHub Actions:
 
-- **build-and-test.yml** - автоматическая сборка и тесты на push/PR (Ubuntu и Windows)
+- **build-and-test.yml** - автоматическая сборка и тесты на push/PR
 - **publish.yml** - создание релизов при создании тега версии (Windows x64, Linux x64)
+
+### Структура CI pipeline
+
+**Job 1: build** (Ubuntu и Windows)
+- Сборка проекта
+- Запуск unit-тестов (`--filter "Category!=Integration"`)
+
+**Job 2: integration-tests** (только Ubuntu, после build)
+- Запуск интеграционных тестов (`--filter "Category=Integration"`)
+- Docker доступен в ubuntu-latest runner
 
 ### Создание релиза
 

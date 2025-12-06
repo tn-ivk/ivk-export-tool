@@ -52,4 +52,8 @@
     <ProjectReference Include="..\IvkExportTool.Infrastructure\IvkExportTool.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="IvkExportTool.Tests" />
+  </ItemGroup>
+
 </Project>
