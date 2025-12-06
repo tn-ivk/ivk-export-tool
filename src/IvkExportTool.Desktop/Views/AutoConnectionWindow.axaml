@@ -87,7 +87,8 @@
                        VerticalAlignment="Center"
                        Margin="0,0,12,12"/>
             <TextBox Grid.Row="0" Grid.Column="1"
-                     Text="{Binding Host}"
+                     Text="{Binding Host, Mode=TwoWay}"
+                     Classes.invalid="{Binding !IsHostValid}"
                      Watermark="localhost или IP адрес"
                      Margin="0,0,0,12"/>
 
@@ -98,7 +99,8 @@
                        VerticalAlignment="Center"
                        Margin="0,0,12,0"/>
             <TextBox Grid.Row="1" Grid.Column="1"
-                     Text="{Binding Port}"
+                     Text="{Binding Port, Mode=TwoWay}"
+                     Classes.invalid="{Binding !IsPortValid}"
                      Watermark="3306"/>
           </Grid>
 
@@ -137,7 +139,7 @@
             <Button Grid.Column="1"
                     Classes="primary"
                     Command="{Binding ConnectCommand}"
-                    IsEnabled="{Binding !IsLoading}"
+                    IsEnabled="{Binding CanConnect}"
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
                     Margin="8,0,0,0"

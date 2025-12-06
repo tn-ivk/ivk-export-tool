@@ -117,6 +117,7 @@ ViewModels получают зависимости через конструкт
    - Поля ввода: хост, порт, логин, пароль
    - Кнопки: "Тест подключения", "Подключиться"
    - Кнопка возврата на стартовое окно (слева от крестика)
+   - **Валидация полей**: незаполненные поля подсвечиваются красной рамкой, кнопки заблокированы
    - События: `ConnectionSucceeded`, `BackRequested`
    - ViewModel: `ConnectionWindowViewModel`
    - Заголовок: "Подключение к БД ИВК"
@@ -126,6 +127,7 @@ ViewModels получают зависимости через конструкт
    - Статус подключения и индикатор загрузки
    - Кнопки: "Отмена" (активна только во время перебора), "Автоподключение"
    - Кнопка возврата на стартовое окно (слева от крестика)
+   - **Валидация полей**: незаполненные поля подсвечиваются красной рамкой, кнопка заблокирована
    - Автоматический перебор зашифрованных учётных данных из `DefaultCredentials.List`
    - Таймаут подключения: 5 секунд на каждую попытку
    - Отображение прогресса: "Попытка N из M..."
@@ -209,6 +211,32 @@ StartWindow (выбор способа подключения)
 
 Автоматическое обновление: при изменении `IsSelected` у любой `TableItemViewModel` вызывается `UpdateSelectionState()`, который пересчитывает состояние чекбокса в заголовке.
 
+#### Валидация полей подключения
+
+Реализована в `ConnectionWindowViewModel` и `AutoConnectionWindowViewModel`:
+
+**Свойства валидации** (вычисляемые):
+- `IsHostValid` - хост не пустой
+- `IsPortValid` - порт не пустой, число от 1 до 65535
+- `IsUsernameValid` - логин не пустой (только в ConnectionWindow)
+- `IsPasswordValid` - пароль не пустой (только в ConnectionWindow)
+- `CanConnect` - все поля валидны и не идёт загрузка
+
+**UI реализация**:
+- TextBox получает класс `invalid` через `Classes.invalid="{Binding !IsHostValid}"`
+- Стиль `TextBox.invalid` задаёт красную рамку (`ErrorBrush`)
+- Кнопки привязаны к `IsEnabled="{Binding CanConnect}"`
+
+**Атрибуты CommunityToolkit.Mvvm**:
+```csharp
+[ObservableProperty]
+[NotifyPropertyChangedFor(nameof(IsHostValid))]
+[NotifyPropertyChangedFor(nameof(CanConnect))]
+private string _host = "";
+```
+
+При изменении любого поля автоматически пересчитываются свойства валидации.
+
 #### Версионирование приложения
 
 Версия приложения отображается в заголовке главного окна через свойство `WindowTitle` в `MainWindowViewModel` (см. `src/IvkExportTool.Desktop/ViewModels/MainWindowViewModel.cs:89-97`):
@@ -248,14 +276,16 @@ public string WindowTitle
 ```json
 {
   "Connection": {
-    "Host": "192.168.233.101",
+    "Host": "192.168.1.100",
     "Port": 3306,
-    "Username": "user",
-    "EncryptedPassword": "..."
+    "Username": "admin",
+    "EncryptedPassword": "base64..."
   },
   "LastExportDirectory": "/path/to/exports"
 }
 ```
+
+**Важно**: По умолчанию все поля подключения пустые. Fallback на дефолтные значения убран для безопасности.
 
 #### Архитектура
 

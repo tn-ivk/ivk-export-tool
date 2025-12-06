@@ -18,17 +18,17 @@ public class ConnectionConfig
     /// <summary>
     /// Имя пользователя для подключения
     /// </summary>
-    public string Username { get; set; } = "user";
+    public string Username { get; set; } = string.Empty;
 
     /// <summary>
     /// Пароль для подключения
     /// </summary>
-    public string Password { get; set; } = "mJKuyb&9!2@m";
+    public string Password { get; set; } = string.Empty;
 
     /// <summary>
     /// Имя базы данных (опционально, можно выбрать после подключения)
     /// </summary>
-    public string? Database { get; set; }
+    public string Database { get; set; } = string.Empty;
 
     /// <summary>
     /// Строка подключения

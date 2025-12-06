@@ -21,28 +21,26 @@ public class AppSettingsService : IAppSettingsService
 
     public Task<ConnectionConfig> LoadConnectionAsync()
     {
-        var defaultConfig = CreateDefaultConfig();
-
         try
         {
             var connection = _settings.Connection;
 
             var config = new ConnectionConfig
             {
-                Host = string.IsNullOrWhiteSpace(connection.Host) ? defaultConfig.Host : connection.Host,
-                Port = connection.Port <= 0 ? defaultConfig.Port : connection.Port,
-                Username = string.IsNullOrWhiteSpace(connection.Username) ? defaultConfig.Username : connection.Username
+                Host = connection.Host ?? "",
+                Port = connection.Port <= 0 ? 3306 : connection.Port,
+                Username = connection.Username ?? ""
             };
 
             config.Password = string.IsNullOrWhiteSpace(connection.EncryptedPassword)
-                ? defaultConfig.Password
+                ? ""
                 : DecryptPassword(connection.EncryptedPassword);
 
             return Task.FromResult(config);
         }
         catch
         {
-            return Task.FromResult(defaultConfig);
+            return Task.FromResult(new ConnectionConfig());
         }
     }
 
@@ -91,8 +89,6 @@ public class AppSettingsService : IAppSettingsService
 
         return Task.CompletedTask;
     }
-
-    private static ConnectionConfig CreateDefaultConfig() => new();
 
     private static string EncryptPassword(string password)
     {

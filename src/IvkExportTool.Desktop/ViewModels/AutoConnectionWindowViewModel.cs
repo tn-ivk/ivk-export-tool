@@ -18,13 +18,23 @@ public partial class AutoConnectionWindowViewModel : ViewModelBase
 
     // Параметры подключения
     [ObservableProperty]
-    private string _host = "192.168.233.101";
+    [NotifyPropertyChangedFor(nameof(IsHostValid))]
+    [NotifyPropertyChangedFor(nameof(CanConnect))]
+    private string _host = "";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsPortValid))]
+    [NotifyPropertyChangedFor(nameof(CanConnect))]
     private string _port = "3306";
+
+    // Валидация полей
+    public bool IsHostValid => !string.IsNullOrWhiteSpace(Host);
+    public bool IsPortValid => !string.IsNullOrWhiteSpace(Port) && int.TryParse(Port, out var p) && p > 0 && p <= 65535;
+    public bool CanConnect => IsHostValid && IsPortValid && !IsLoading;
 
     // Состояние
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanConnect))]
     private bool _isLoading;
 
     [ObservableProperty]
