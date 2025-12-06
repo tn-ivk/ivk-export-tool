@@ -3,7 +3,8 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
-    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <!-- Отключено для Native AOT (было нужно для accessibility APIs до Avalonia 12.0) -->
+    <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
 
@@ -15,12 +16,12 @@
 
   <!-- Оптимизации для уменьшения размера публикации -->
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <!-- Native AOT - компиляция в нативный код -->
+    <PublishAot>true</PublishAot>
+
     <!-- IL Trimming - удаляет неиспользуемый код -->
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>link</TrimMode>
-
-    <!-- Компрессия single-file executable -->
-    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
 
     <!-- Оптимизация размера -->
     <OptimizationPreference>Size</OptimizationPreference>

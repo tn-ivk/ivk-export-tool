@@ -52,11 +52,17 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
+    - name: Install Native AOT prerequisites (Linux)
+      if: matrix.runtime == 'linux-x64'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang zlib1g-dev
+
     - name: Restore dependencies
       run: dotnet restore
 
-    - name: Publish application
-      run: dotnet publish ${{ env.PROJECT_PATH }} --configuration Release --runtime ${{ matrix.runtime }} --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:DebugType=None /p:DebugSymbols=false /p:StripSymbols=true /p:Version=${{ env.VERSION }} /p:AssemblyVersion=${{ env.VERSION }} /p:FileVersion=${{ env.VERSION }} --output ./publish/${{ matrix.runtime }}
+    - name: Publish application (Native AOT)
+      run: dotnet publish ${{ env.PROJECT_PATH }} --configuration Release --runtime ${{ matrix.runtime }} /p:DebugType=None /p:DebugSymbols=false /p:Version=${{ env.VERSION }} /p:AssemblyVersion=${{ env.VERSION }} /p:FileVersion=${{ env.VERSION }} --output ./publish/${{ matrix.runtime }}
 
     - name: Rename executable (Linux)
       if: matrix.runtime == 'linux-x64'
