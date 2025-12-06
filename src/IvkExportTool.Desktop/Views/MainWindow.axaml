@@ -232,15 +232,13 @@
 
             <!-- Прошедшее время -->
             <TextBlock Grid.Column="1"
-                       VerticalAlignment="Center"
+                       Text="{Binding ElapsedTime}"
+                       VerticalAlignment="Top"
                        Margin="16,0,0,0"
                        FontSize="13"
                        FontWeight="SemiBold"
                        FontFamily="Consolas"
-                       Foreground="{StaticResource PrimaryBrush}">
-              <Run Text="Время"/>
-              <Run Text="{Binding ElapsedTime}"/>
-            </TextBlock>
+                       Foreground="{StaticResource PrimaryBrush}"/>
           </Grid>
         </Border>
 
