@@ -178,7 +178,8 @@ StartWindow (выбор способа подключения)
 - `OnChangeConnectionRequested` - смена подключения из главного окна (возврат на стартовое окно)
 
 **Особенности реализации**:
-- Все окна открываются на том же мониторе с сохранением центральной позиции
+- При первом запуске окно центрируется на основном мониторе
+- При переключении между окнами новое окно центрируется на том же мониторе, где было предыдущее
 - При переключении окон старое закрывается только ПОСЛЕ открытия нового для плавного перехода
 - Позиция окна сохраняется в `_lastWindowPosition` и восстанавливается через `RestoreWindowPositionOnSameScreen()`
 - Используется `WindowStartupLocation = WindowStartupLocation.Manual` для ручного позиционирования
@@ -295,6 +296,17 @@ public string WindowTitle
 ```
 
 **Важно**: По умолчанию все поля подключения пустые. Fallback на дефолтные значения убран для безопасности.
+
+#### Когда сохраняются настройки подключения
+
+Настройки подключения сохраняются **только при успешном подключении** к базе данных:
+
+| Окно | Когда сохраняется | Что сохраняется |
+|------|-------------------|-----------------|
+| ConnectionWindow (ручное) | После успешного нажатия "Подключиться" | Host, Port, Username, Password (зашифрованный) |
+| AutoConnectionWindow | После успешного автоподключения | **Только** Host и Port (без учётных данных) |
+
+**Важно**: При автоподключении логин и пароль **не сохраняются** в settings.json, так как используются зашифрованные credentials из `DefaultCredentials`.
 
 #### Архитектура
 
@@ -524,7 +536,7 @@ dotnet publish src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj \
 - **build-and-test.yml** - автоматическая сборка и тесты на push/PR
 - **publish.yml** - создание релизов при создании тега версии (Windows x64, Linux x64)
 
-### Структура CI pipeline
+### Структура build-and-test pipeline
 
 **Job 1: build** (Ubuntu и Windows)
 - Сборка проекта
@@ -533,6 +545,35 @@ dotnet publish src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj \
 **Job 2: integration-tests** (только Ubuntu, после build)
 - Запуск интеграционных тестов (`--filter "Category=Integration"`)
 - Docker доступен в ubuntu-latest runner
+
+### Структура publish pipeline
+
+Релиз создаётся только после успешного прохождения всех тестов:
+
+```
+test (ubuntu + windows)     # unit-тесты на обеих платформах
+        ↓
+integration-tests (ubuntu)  # интеграционные тесты с Docker
+        ↓
+publish (ubuntu + windows)  # сборка релизов
+        ↓
+create-release              # создание GitHub Release
+```
+
+**Job 1: test** (Ubuntu и Windows параллельно)
+- Сборка проекта
+- Запуск unit-тестов (`--filter "Category!=Integration"`)
+
+**Job 2: integration-tests** (только Ubuntu, после test)
+- Запуск интеграционных тестов (`--filter "Category=Integration"`)
+- Требует Docker (доступен в ubuntu-latest runner)
+
+**Job 3: publish** (Ubuntu и Windows параллельно, после integration-tests)
+- Публикация self-contained приложения
+- Создание архивов (tar.gz для Linux, zip для Windows)
+
+**Job 4: create-release** (после publish, только для тегов)
+- Создание GitHub Release с артефактами
 
 ### Создание релиза
 
@@ -544,7 +585,7 @@ git push origin v1.0.0
 
 ### Процесс публикации релиза
 
-**Извлечение версии** (см. `.github/workflows/publish.yml:36-48`):
+**Извлечение версии** (см. `.github/workflows/publish.yml:86-98`):
 - Версия извлекается из git-тега автоматически: `VERSION="${GITHUB_REF#refs/tags/}"`
 - Если запуск без тега (например, через `workflow_dispatch`), используется версия `0.0.0-dev`
 - Версия передается в процесс сборки через параметры `/p:Version`, `/p:AssemblyVersion`, `/p:FileVersion`

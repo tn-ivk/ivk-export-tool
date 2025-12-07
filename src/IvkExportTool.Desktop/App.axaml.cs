@@ -303,19 +303,24 @@ public partial class App : Application
     }
 
     /// <summary>
-    /// Устанавливает позицию окна на том же мониторе, где было предыдущее окно
+    /// Устанавливает позицию окна на том же мониторе, где было предыдущее окно,
+    /// или центрирует на основном мониторе при первом запуске
     /// </summary>
     private void RestoreWindowPositionOnSameScreen(Window window)
     {
-        if (!_lastWindowPosition.HasValue || window.Screens == null)
+        if (window.Screens == null)
             return;
 
-        // Находим монитор, который содержит последнюю сохранённую позицию
-        var targetScreen = window.Screens.All.FirstOrDefault(screen =>
-            screen.WorkingArea.Contains(_lastWindowPosition.Value))
-            ?? window.Screens.Primary;
+        // Определяем целевой монитор:
+        // - если есть сохранённая позиция, ищем монитор, содержащий эту точку
+        // - иначе используем основной монитор (первый запуск)
+        var targetScreen = _lastWindowPosition.HasValue
+            ? window.Screens.All.FirstOrDefault(screen =>
+                screen.WorkingArea.Contains(_lastWindowPosition.Value))
+                ?? window.Screens.Primary
+            : window.Screens.Primary;
 
-        if (targetScreen != null)
+        if (targetScreen is not null)
         {
             // Центрируем окно на найденном мониторе
             var screenCenter = targetScreen.WorkingArea.Center;
