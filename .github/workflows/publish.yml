@@ -122,18 +122,18 @@ jobs:
       if: matrix.archive-format == 'tar.gz'
       run: |
         cd ./publish/${{ matrix.runtime }}
-        tar -czf ../${{ matrix.artifact-name }}.tar.gz *
+        tar -czf ../IvkExportTool-${VERSION}-${{ matrix.runtime }}.tar.gz *
 
     - name: Create archive (Windows)
       if: matrix.archive-format == 'zip'
       run: |
         cd ./publish/${{ matrix.runtime }}
-        Compress-Archive -Path * -DestinationPath ../${{ matrix.artifact-name }}.zip
+        Compress-Archive -Path * -DestinationPath ../IvkExportTool-$env:VERSION-${{ matrix.runtime }}.zip
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ matrix.artifact-name }}
+        name: IvkExportTool-${{ env.VERSION }}-${{ matrix.runtime }}
         path: |
           ./publish/*.tar.gz
           ./publish/*.zip
