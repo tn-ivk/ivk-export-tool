@@ -245,26 +245,34 @@ private string _host = "";
 
 #### Версионирование приложения
 
-Версия приложения отображается в заголовке главного окна через свойство `WindowTitle` в `MainWindowViewModel` (см. `src/IvkExportTool.Desktop/ViewModels/MainWindowViewModel.cs:89-97`):
+Версия приложения отображается в нескольких местах UI через свойство `AppVersion` в базовом классе `ViewModelBase` (см. `src/IvkExportTool.Desktop/ViewModels/ViewModelBase.cs`):
 
+**Где отображается версия**:
+- **StartWindow** - под кнопками выбора способа подключения (по центру)
+- **MainWindow** - в status bar слева (перед статусным сообщением)
+- **Заголовок MainWindow** - через свойство `WindowTitle`
+
+**Реализация**:
 - **Источник версии**: извлекается из `Assembly.GetExecutingAssembly().GetName().Version`
-- **Формат отображения**: `IvkExportTool v{Major}.{Minor}.{Build} - Подключение к БД ИВК`
+- **Формат отображения**: `v{Major}.{Minor}.{Build}` (например, `v1.0.0`)
 - **Значение по умолчанию**: `v0.0.0` (если версия не установлена)
 - **Установка версии в CI/CD**: версия устанавливается при сборке релиза через параметры `/p:Version`, `/p:AssemblyVersion`, `/p:FileVersion`
 - **Источник версии для релизов**: извлекается из git-тега (например, тег `v1.0.0` → версия `1.0.0`)
 - **Версия для dev-сборок**: `0.0.0-dev` (при сборке без тега)
 
-Реализация:
 ```csharp
-public string WindowTitle
+// ViewModelBase.cs - базовый класс для всех ViewModel
+public string AppVersion
 {
     get
     {
         var version = Assembly.GetExecutingAssembly().GetName().Version;
-        var versionString = version != null ? $"v{version.Major}.{version.Minor}.{version.Build}" : "v0.0.0";
-        return $"IvkExportTool {versionString} - Подключение к БД ИВК";
+        return version != null ? $"v{version.Major}.{version.Minor}.{version.Build}" : "v0.0.0";
     }
 }
+
+// MainWindowViewModel.cs - использование в заголовке окна
+public string WindowTitle => $"IvkExportTool {AppVersion} - Подключение к БД ИВК";
 ```
 
 ### Система настроек приложения (System.Text.Json + Source Generators)

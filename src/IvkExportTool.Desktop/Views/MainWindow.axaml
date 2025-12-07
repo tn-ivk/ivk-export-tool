@@ -243,10 +243,18 @@
         </Border>
 
         <!-- Основная строка статуса -->
-        <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="16,8">
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto" Margin="16,8">
+
+          <!-- Версия приложения -->
+          <TextBlock Grid.Column="0"
+                     Text="{Binding AppVersion}"
+                     Foreground="{StaticResource OnSurfaceVariantBrush}"
+                     FontSize="12"
+                     VerticalAlignment="Center"
+                     Margin="0,0,12,0"/>
 
           <!-- Сообщение о статусе -->
-          <TextBlock Grid.Column="0"
+          <TextBlock Grid.Column="1"
                      Text="{Binding StatusMessage}"
                      Foreground="{StaticResource OnSurfaceVariantBrush}"
                      FontSize="13"
@@ -256,7 +264,7 @@
                      MaxWidth="300"/>
 
           <!-- Статистика -->
-          <StackPanel Grid.Column="1"
+          <StackPanel Grid.Column="2"
                       Orientation="Horizontal"
                       Spacing="16"
                       IsVisible="{Binding !IsExporting}">
@@ -291,7 +299,7 @@
           </StackPanel>
 
           <!-- Кнопка экспорта -->
-          <Button Grid.Column="2"
+          <Button Grid.Column="3"
                   Classes="accent export-button"
                   Command="{Binding ExportCommand}"
                   IsEnabled="{Binding HasSelectedTables}">

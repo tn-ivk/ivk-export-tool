@@ -105,6 +105,13 @@
             </Grid>
           </Button>
 
+          <!-- Версия приложения -->
+          <TextBlock Text="{Binding AppVersion}"
+                     HorizontalAlignment="Center"
+                     Foreground="{StaticResource OnSurfaceVariantBrush}"
+                     FontSize="12"
+                     Margin="0,8,0,0"/>
+
         </StackPanel>
       </Grid>
     </Border>
