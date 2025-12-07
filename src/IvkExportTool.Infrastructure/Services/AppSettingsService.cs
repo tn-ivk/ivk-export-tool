@@ -65,6 +65,24 @@ public class AppSettingsService : IAppSettingsService
         return Task.CompletedTask;
     }
 
+    public Task SaveHostAndPortAsync(string host, int port)
+    {
+        try
+        {
+            _settings.Connection.Host = host;
+            _settings.Connection.Port = port;
+            // Не трогаем Username и EncryptedPassword
+
+            SettingsStore.Save(_settings);
+        }
+        catch
+        {
+            // Игнорируем ошибки записи
+        }
+
+        return Task.CompletedTask;
+    }
+
     public Task<string?> LoadLastExportDirectoryAsync()
     {
         try

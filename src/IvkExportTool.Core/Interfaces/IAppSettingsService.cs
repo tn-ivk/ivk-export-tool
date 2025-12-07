@@ -19,6 +19,11 @@ public interface IAppSettingsService
     Task SaveConnectionAsync(ConnectionConfig config);
 
     /// <summary>
+    /// Сохраняет только хост и порт подключения (без учётных данных).
+    /// </summary>
+    Task SaveHostAndPortAsync(string host, int port);
+
+    /// <summary>
     /// Загружает путь к последней папке экспорта.
     /// </summary>
     Task<string?> LoadLastExportDirectoryAsync();

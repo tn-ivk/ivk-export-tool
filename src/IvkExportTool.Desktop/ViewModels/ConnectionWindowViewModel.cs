@@ -11,9 +11,6 @@ public partial class ConnectionWindowViewModel : ViewModelBase
 {
     private readonly IDatabaseService _databaseService;
     private readonly IAppSettingsService? _appSettingsService;
-    private readonly SemaphoreSlim _saveSemaphore = new(1, 1);
-    private CancellationTokenSource? _saveCts;
-    private bool _isInitializingSettings;
 
     // Параметры подключения
     [ObservableProperty]
@@ -92,8 +89,6 @@ public partial class ConnectionWindowViewModel : ViewModelBase
         if (_appSettingsService is null)
             return;
 
-        _isInitializingSettings = true;
-
         try
         {
             var config = await _appSettingsService.LoadConnectionAsync();
@@ -106,57 +101,23 @@ public partial class ConnectionWindowViewModel : ViewModelBase
         {
             // Игнорируем ошибки загрузки
         }
-        finally
-        {
-            _isInitializingSettings = false;
-        }
     }
 
-    private void ScheduleSaveSettings()
-    {
-        if (_appSettingsService is null || _isInitializingSettings)
-            return;
-
-        _saveCts?.Cancel();
-        var cts = new CancellationTokenSource();
-        _saveCts = cts;
-
-        Task.Run(async () =>
-        {
-            try
-            {
-                await Task.Delay(500, cts.Token);
-                await SaveSettingsInternalAsync();
-            }
-            catch (TaskCanceledException) { }
-        });
-    }
-
-    private async Task SaveSettingsInternalAsync()
+    private async Task SaveSettingsAsync()
     {
         if (_appSettingsService is null)
             return;
 
         try
         {
-            await _saveSemaphore.WaitAsync();
-            try
-            {
-                var config = GetConnectionConfig();
-                await _appSettingsService.SaveConnectionAsync(config);
-            }
-            finally
-            {
-                _saveSemaphore.Release();
-            }
+            var config = GetConnectionConfig();
+            await _appSettingsService.SaveConnectionAsync(config);
         }
-        catch { }
+        catch
+        {
+            // Игнорируем ошибки сохранения
+        }
     }
-
-    partial void OnHostChanged(string value) => ScheduleSaveSettings();
-    partial void OnPortChanged(string value) => ScheduleSaveSettings();
-    partial void OnUsernameChanged(string value) => ScheduleSaveSettings();
-    partial void OnPasswordChanged(string value) => ScheduleSaveSettings();
 
     #endregion
 
@@ -227,7 +188,7 @@ public partial class ConnectionWindowViewModel : ViewModelBase
                     StatusMessageType.Success);
 
                 // Сохраняем настройки
-                await SaveSettingsInternalAsync();
+                await SaveSettingsAsync();
 
                 // Вызываем событие успешного подключения
                 ConnectionSucceeded?.Invoke(this, config);

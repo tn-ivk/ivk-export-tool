@@ -89,6 +89,22 @@ public partial class AutoConnectionWindowViewModel : ViewModelBase
         }
     }
 
+    private async Task SaveHostAndPortAsync()
+    {
+        if (_appSettingsService is null)
+            return;
+
+        try
+        {
+            var port = int.TryParse(Port, out var p) ? p : 3306;
+            await _appSettingsService.SaveHostAndPortAsync(Host, port);
+        }
+        catch
+        {
+            // Игнорируем ошибки сохранения
+        }
+    }
+
     [RelayCommand]
     private void Back()
     {
@@ -156,6 +172,9 @@ public partial class AutoConnectionWindowViewModel : ViewModelBase
                             ShowNotification(
                                 $"✓ Автоподключение успешно! Найдено {databases.Count} баз данных.",
                                 StatusMessageType.Success);
+
+                            // Сохраняем только Host и Port (без логина/пароля)
+                            await SaveHostAndPortAsync();
 
                             // Вызываем событие успешного подключения → переход на MainWindow
                             ConnectionSucceeded?.Invoke(this, config);
