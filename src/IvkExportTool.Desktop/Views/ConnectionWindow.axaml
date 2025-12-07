@@ -7,7 +7,7 @@
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
         x:Class="IvkExportTool.Desktop.Views.ConnectionWindow"
         x:DataType="vm:ConnectionWindowViewModel"
-        Icon="/Assets/Transneft.ico"
+        Icon="/Assets/DB.ico"
         Title="IvkExportTool - Подключение к БД ИВК"
         Width="460" Height="360"
         MinWidth="460" MinHeight="360"

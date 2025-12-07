@@ -7,7 +7,7 @@
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
         x:Class="IvkExportTool.Desktop.Views.StartWindow"
         x:DataType="vm:StartWindowViewModel"
-        Icon="/Assets/Transneft.ico"
+        Icon="/Assets/DB.ico"
         Title="IvkExportTool - Выбор способа подключения"
         Width="460" Height="360"
         MinWidth="460" MinHeight="360"
@@ -104,6 +104,13 @@
                          Margin="0,0,20,0"/>
             </Grid>
           </Button>
+
+          <!-- Версия приложения -->
+          <TextBlock Text="{Binding AppVersion}"
+                     HorizontalAlignment="Center"
+                     Foreground="{StaticResource OnSurfaceVariantBrush}"
+                     FontSize="12"
+                     Margin="0,8,0,0"/>
 
         </StackPanel>
       </Grid>

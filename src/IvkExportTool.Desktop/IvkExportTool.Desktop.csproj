@@ -13,7 +13,7 @@
     <FileVersion>0.0.0</FileVersion>
 
     <!-- Иконка приложения -->
-    <ApplicationIcon>Assets\Transneft.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\DB.ico</ApplicationIcon>
   </PropertyGroup>
 
   <!-- Оптимизации для уменьшения размера публикации -->
