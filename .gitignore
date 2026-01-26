@@ -85,6 +85,7 @@ logs/
 coverage/
 *.coverage
 *.coveragexml
+*.cobertura.xml
 
 # JetBrains Rider
 _ReSharper.Caches/
