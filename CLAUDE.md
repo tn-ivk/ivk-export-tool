@@ -2,6 +2,23 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Быстрый старт
+
+```bash
+# Сборка и запуск
+dotnet build
+dotnet run --project src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj
+
+# Тесты
+dotnet test                                    # все тесты
+dotnet test --filter "Category!=Integration"  # только unit-тесты (быстро)
+dotnet test --filter "Category=Integration"   # только интеграционные (требует Docker)
+
+# Форматирование
+dotnet format --verify-no-changes             # проверка
+dotnet format                                 # автоисправление
+```
+
 ## Описание проекта
 
 **IvkExportTool** - кроссплатформенное портабельное приложение с GUI на Avalonia для экспорта таблиц MySQL в SQL-файлы. В текущей версии реализован экспорт в SQL формат с полной структурой и данными таблиц.
@@ -279,10 +296,6 @@ public string WindowTitle => $"IvkExportTool {AppVersion} - Подключени
 
 Приложение использует **System.Text.Json с Source Generators** для AOT-совместимой сериализации настроек.
 
-#### Почему не Config.Net
-
-Ранее использовалась библиотека Config.Net, но она несовместима с IL Trimming из-за использования рефлексии для создания прокси-объектов. При публикации с `PublishTrimmed=true` приложение падало.
-
 #### Расположение файла настроек
 
 Файл `settings.json` хранится в стандартных папках конфигурации ОС:
@@ -544,44 +557,20 @@ dotnet publish src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj \
 - **build-and-test.yml** - автоматическая сборка и тесты на push/PR
 - **publish.yml** - создание релизов при создании тега версии (Windows x64, Linux x64)
 
-### Структура build-and-test pipeline
-
-**Job 1: build** (Ubuntu и Windows)
-- Сборка проекта
-- Запуск unit-тестов (`--filter "Category!=Integration"`)
-
-**Job 2: integration-tests** (только Ubuntu, после build)
-- Запуск интеграционных тестов (`--filter "Category=Integration"`)
-- Docker доступен в ubuntu-latest runner
-
-### Структура publish pipeline
-
-Релиз создаётся только после успешного прохождения всех тестов:
+### Pipeline структура
 
 ```
-test (ubuntu + windows)     # unit-тесты на обеих платформах
-        ↓
-integration-tests (ubuntu)  # интеграционные тесты с Docker
-        ↓
-publish (ubuntu + windows)  # сборка релизов
-        ↓
-create-release              # создание GitHub Release
+build-and-test.yml:
+  build (ubuntu + windows) → integration-tests (ubuntu, Docker)
+
+publish.yml:
+  test (ubuntu + windows) → integration-tests → publish → create-release
 ```
 
-**Job 1: test** (Ubuntu и Windows параллельно)
-- Сборка проекта
-- Запуск unit-тестов (`--filter "Category!=Integration"`)
-
-**Job 2: integration-tests** (только Ubuntu, после test)
-- Запуск интеграционных тестов (`--filter "Category=Integration"`)
-- Требует Docker (доступен в ubuntu-latest runner)
-
-**Job 3: publish** (Ubuntu и Windows параллельно, после integration-tests)
-- Публикация self-contained приложения
-- Создание архивов (tar.gz для Linux, zip для Windows)
-
-**Job 4: create-release** (после publish, только для тегов)
-- Создание GitHub Release с артефактами
+- **build/test**: сборка + unit-тесты (`--filter "Category!=Integration"`)
+- **integration-tests**: тесты с Testcontainers (требует Docker)
+- **publish**: создание self-contained архивов (tar.gz/zip)
+- **create-release**: GitHub Release с артефактами (только для тегов)
 
 ### Создание релиза
 
@@ -651,3 +640,19 @@ git push origin v1.0.0
 ### Тестирование
 
 Не пытайся запустить проект для проверки визуальной части. Проект сделан на технологии Avalonia и ты не сможешь получить доступ к фронт-части.
+
+## Технический долг
+
+Перед внесением изменений ознакомься с документами в папке `tech_debt/`:
+
+- **`tech_debt/CODE_REVIEW.md`** - детальный обзор кода с приоритизированным списком проблем (P0-P3)
+- **`tech-debt/large-table-export-optimization.md`** - план оптимизации экспорта больших таблиц
+
+### Известные критические проблемы (P0)
+
+1. **SQL-инъекция** в `SqlExportService.cs` - имена таблиц подставляются без валидации
+2. **Утечка памяти** - подписки на события не отписываются при смене фильтра таблиц
+3. **Race condition** в `SettingsStore.cs` - `Load()` без блокировки
+4. **Недостающие AXAML ресурсы** - `SurfaceContainerHighBrush`, `OnSurfaceVariantBrush`
+
+Подробности и план исправления см. в `tech_debt/CODE_REVIEW.md`.
