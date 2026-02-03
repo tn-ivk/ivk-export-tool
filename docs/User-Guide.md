@@ -120,22 +120,24 @@ IvkExportTool имеет четыре окна:
 
 ### Сохранение параметров подключения
 
-Приложение автоматически сохраняет последние использованные параметры подключения в файле `appsettings.json`:
+Приложение автоматически сохраняет последние использованные параметры подключения:
+
+- **Windows**: `%APPDATA%\IvkExportTool\settings.json`
+- **Linux/macOS**: `~/.config/IvkExportTool/settings.json`
 
 ```json
 {
-  "ConnectionSettings": {
-    "Host": "localhost",
+  "Connection": {
+    "Host": "192.168.1.100",
     "Port": 3306,
-    "Username": "root",
-    "Password": "",
-    "Database": ""
+    "Username": "admin",
+    "EncryptedPassword": "base64..."
   },
-  "LastExportDirectory": "C:\\exports"
+  "LastExportDirectory": "/path/to/exports"
 }
 ```
 
-> **Внимание**: Пароль сохраняется в открытом виде. Не используйте это на общедоступных компьютерах.
+> **Примечание**: Пароль сохраняется в зашифрованном виде. Зашифрованный пароль с Windows НЕ совместим с Linux и наоборот.
 
 ### Смена подключения
 
@@ -343,32 +345,29 @@ mysql -u root -p mydb < mydb_20250120_153045.sql
 
 ### Файл конфигурации
 
-Настройки хранятся в файле `appsettings.json` в папке с приложением:
+Настройки хранятся в стандартных папках конфигурации ОС:
+
+- **Windows**: `%APPDATA%\IvkExportTool\settings.json`
+- **Linux/macOS**: `~/.config/IvkExportTool/settings.json`
+
+Пример структуры:
 
 ```json
 {
-  "ConnectionSettings": {
-    "Host": "localhost",
+  "Connection": {
+    "Host": "192.168.1.100",
     "Port": 3306,
-    "Username": "root",
-    "Password": "",
-    "Database": ""
+    "Username": "admin",
+    "EncryptedPassword": "base64..."
   },
-  "ExportSettings": {
-    "LastExportDirectory": "C:\\exports",
-    "DefaultExportFormat": "SQL"
-  },
-  "UISettings": {
-    "WindowWidth": 1200,
-    "WindowHeight": 800
-  }
+  "LastExportDirectory": "/path/to/exports"
 }
 ```
 
 ### Ручное редактирование настроек
 
 1. Закройте приложение
-2. Откройте `appsettings.json` в текстовом редакторе
+2. Откройте `settings.json` в текстовом редакторе
 3. Внесите изменения
 4. Сохраните файл
 5. Запустите приложение
@@ -378,7 +377,9 @@ mysql -u root -p mydb < mydb_20250120_153045.sql
 Чтобы сбросить все настройки к значениям по умолчанию:
 
 1. Закройте приложение
-2. Удалите файл `appsettings.json`
+2. Удалите файл `settings.json` из папки настроек:
+   - **Windows**: `%APPDATA%\IvkExportTool\settings.json`
+   - **Linux**: `~/.config/IvkExportTool/settings.json`
 3. Запустите приложение — файл будет создан заново
 
 ## Горячие клавиши
@@ -399,7 +400,7 @@ mysql -u root -p mydb < mydb_20250120_153045.sql
 
 ### Безопасность
 
-- 🔒 **Не храните пароли**: Очищайте `appsettings.json` на общих компьютерах
+- 🔒 **Не храните пароли**: Удаляйте `settings.json` на общих компьютерах
 - 🔒 **Используйте read-only пользователей**: Создайте пользователя с правами только на чтение
 
 ```sql

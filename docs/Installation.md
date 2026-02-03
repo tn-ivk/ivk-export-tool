@@ -62,7 +62,7 @@
 
 3. **Запустите приложение**:
    - Перейдите в папку с приложением
-   - Дважды щелкните на `IvkExportTool.Desktop.exe`
+   - Дважды щелкните на `IvkExportTool.exe`
 
 ### Вариант 2: Запуск через .NET Runtime
 
@@ -78,7 +78,7 @@ dotnet IvkExportTool.Desktop.dll
 
 ### Создание ярлыка на рабочем столе
 
-1. Щелкните правой кнопкой на `IvkExportTool.Desktop.exe`
+1. Щелкните правой кнопкой на `IvkExportTool.exe`
 2. Выберите "Создать ярлык"
 3. Перетащите ярлык на рабочий стол
 
@@ -96,7 +96,7 @@ dotnet IvkExportTool.Desktop.dll
 Теперь можно запускать:
 
 ```cmd
-IvkExportTool.Desktop
+IvkExportTool
 ```
 
 ## Установка на Linux
@@ -119,13 +119,13 @@ tar -xzf IvkExportTool-linux-x64.tar.gz -C ~/Applications/IvkExportTool
 3. **Добавьте права на выполнение**:
 
 ```bash
-chmod +x ~/Applications/IvkExportTool/IvkExportTool.Desktop
+chmod +x ~/Applications/IvkExportTool/IvkExportTool
 ```
 
 4. **Запустите приложение**:
 
 ```bash
-~/Applications/IvkExportTool/IvkExportTool.Desktop
+~/Applications/IvkExportTool/IvkExportTool
 ```
 
 ### Установка системных зависимостей
@@ -154,7 +154,7 @@ Version=1.0
 Type=Application
 Name=IvkExportTool
 Comment=MySQL Export Tool
-Exec=/home/USERNAME/Applications/IvkExportTool/IvkExportTool.Desktop
+Exec=/home/USERNAME/Applications/IvkExportTool/IvkExportTool
 Icon=/home/USERNAME/Applications/IvkExportTool/icon.png
 Terminal=false
 Categories=Development;Database;
@@ -195,19 +195,19 @@ tar -xzf IvkExportTool-osx-x64.tar.gz -C ~/Applications/IvkExportTool
 3. **Добавьте права на выполнение**:
 
 ```bash
-chmod +x ~/Applications/IvkExportTool/IvkExportTool.Desktop
+chmod +x ~/Applications/IvkExportTool/IvkExportTool
 ```
 
 4. **Разрешите запуск** (требуется для неподписанных приложений):
 
 ```bash
-xattr -d com.apple.quarantine ~/Applications/IvkExportTool/IvkExportTool.Desktop
+xattr -d com.apple.quarantine ~/Applications/IvkExportTool/IvkExportTool
 ```
 
 5. **Запустите приложение**:
 
 ```bash
-~/Applications/IvkExportTool/IvkExportTool.Desktop
+~/Applications/IvkExportTool/IvkExportTool
 ```
 
 ### Установка через Homebrew (в будущем)
@@ -313,12 +313,13 @@ dotnet publish src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj \
 ### Для портабельной версии
 
 1. Скачайте новую версию из [Releases](https://github.com/YOUR_USERNAME/ivk-export-tool/releases)
-2. **Сохраните настройки** (опционально):
-   - Скопируйте файл `appsettings.json` из старой версии
-3. Удалите старую версию
-4. Распакуйте новую версию
-5. **Восстановите настройки** (если сохраняли):
-   - Скопируйте `appsettings.json` в новую папку
+2. Удалите старую версию
+3. Распакуйте новую версию
+4. Запустите приложение — настройки сохраняются отдельно в папках конфигурации ОС:
+   - **Windows**: `%APPDATA%\IvkExportTool\`
+   - **Linux**: `~/.config/IvkExportTool/`
+
+> **Примечание**: Настройки автоматически сохраняются между версиями.
 
 ### Для сборки из исходников
 
@@ -375,7 +376,7 @@ Settings → Update & Security → Windows Security → App & browser control �
 **Решение**: Снимите карантин с приложения:
 
 ```bash
-xattr -d com.apple.quarantine ~/Applications/IvkExportTool/IvkExportTool.Desktop
+xattr -d com.apple.quarantine ~/Applications/IvkExportTool/IvkExportTool
 ```
 
 ### Размер загружаемого файла слишком большой

@@ -31,12 +31,12 @@
 
 Перейдите в раздел [Releases](https://github.com/YOUR_USERNAME/ivk-export-tool/releases) и скачайте последнюю версию:
 
-- **Windows**: `IvkExportTool-win-x64.zip`
-- **Linux**: `IvkExportTool-linux-x64.tar.gz`
+- **Windows**: `IvkExportTool-{VERSION}-win-x64.zip` (например, `IvkExportTool-1.0.0-win-x64.zip`)
+- **Linux**: `IvkExportTool-{VERSION}-linux-x64.tar.gz` (например, `IvkExportTool-1.0.0-linux-x64.tar.gz`)
 
 Распакуйте архив и запустите исполняемый файл:
-- Windows: `IvkExportTool.Desktop.exe`
-- Linux: `./IvkExportTool.Desktop`
+- Windows: `IvkExportTool.exe`
+- Linux: `./IvkExportTool`
 
 ### Сборка из исходников
 

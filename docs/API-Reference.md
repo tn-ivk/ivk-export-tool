@@ -696,9 +696,12 @@ public class AppSettingsService : IAppSettingsService
 
 ##### Implementation Details
 
-- Использует `System.Text.Json` для сериализации
-- Сохраняет настройки в `appsettings.json` в папке приложения
+- Использует `System.Text.Json` с Source Generators для AOT-совместимой сериализации
+- Сохраняет настройки в стандартные папки конфигурации ОС:
+  - **Windows**: `%APPDATA%\IvkExportTool\settings.json`
+  - **Linux/macOS**: `~/.config/IvkExportTool/settings.json`
 - При отсутствии файла возвращает настройки по умолчанию
+- Операции записи thread-safe через блокировку
 
 ---
 
