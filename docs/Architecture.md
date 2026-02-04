@@ -139,7 +139,7 @@ Tests ───────> Core + Infrastructure + Desktop
 ```csharp
 public class ConnectionConfig
 {
-    public string Host { get; set; } = "localhost";
+    public string Host { get; set; } = "192.168.233.101";
     public int Port { get; set; } = 3306;
     public string Username { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
@@ -465,7 +465,20 @@ private void OnConnectionSucceeded(ConnectionConfig config)
 internal partial class AppSettingsJsonContext : JsonSerializerContext { }
 ```
 
-**SettingsStore** (потокобезопасные операции):
+**IAppSettingsService** (асинхронный интерфейс):
+
+```csharp
+public interface IAppSettingsService
+{
+    Task<ConnectionConfig> LoadConnectionAsync();
+    Task SaveConnectionAsync(ConnectionConfig config);
+    Task SaveHostAndPortAsync(string host, int port);
+    Task<string?> LoadLastExportDirectoryAsync();
+    Task SaveLastExportDirectoryAsync(string directory);
+}
+```
+
+**SettingsStore** (потокобезопасные операции низкого уровня):
 
 ```csharp
 public static class SettingsStore

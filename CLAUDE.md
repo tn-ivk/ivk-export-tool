@@ -21,19 +21,20 @@ dotnet format                                 # автоисправление
 
 ## Описание проекта
 
-**IvkExportTool** - кроссплатформенное портабельное приложение с GUI на Avalonia для экспорта таблиц MySQL в SQL-файлы. В текущей версии реализован экспорт в SQL формат с полной структурой и данными таблиц.
+**IvkExportTool** — кроссплатформенное портабельное приложение с GUI на Avalonia для экспорта таблиц MySQL в SQL-файлы. Экспорт включает полную структуру и данные таблиц.
 
 ## Технологический стек
 
-- **.NET 10.0** (SDK 10.0.0)
-- **Avalonia UI 11.3.8** - кроссплатформенный GUI фреймворк
-- **MySqlConnector 2.4.0** - подключение к MySQL базам данных
-- **System.Text.Json с Source Generators** - AOT-совместимая сериализация настроек
-- **CommunityToolkit.Mvvm 8.2.1** - MVVM паттерн
-- **NUnit 4.2.2** - тестирование
-- **FluentAssertions 8.8.0** - assertion библиотека для тестов
-- **Moq 4.20.72** - мокирование зависимостей в тестах
-- **Testcontainers.MySql 4.9.0** - интеграционные тесты с реальной MySQL в Docker
+| Компонент | Версия | Назначение |
+|-----------|--------|-----------|
+| .NET | 10.0 | Платформа |
+| Avalonia UI | 11.3.8 | Кроссплатформенный GUI |
+| MySqlConnector | 2.4.0 | Подключение к MySQL |
+| CommunityToolkit.Mvvm | 8.2.1 | MVVM паттерн |
+| NUnit + FluentAssertions + Moq | — | Тестирование |
+| Testcontainers.MySql | 4.9.0 | Интеграционные тесты (Docker) |
+
+**Особенности**: System.Text.Json с Source Generators для AOT-совместимой сериализации.
 
 ## Архитектура проекта
 
@@ -56,7 +57,8 @@ IvkExportTool/
 │   └── IvkExportTool.Desktop/       # Presentation Layer
 │       ├── ViewModels/              # MVVM ViewModels (CommunityToolkit.Mvvm)
 │       ├── Views/                   # Avalonia AXAML представления
-│       └── Models/                  # UI модели и обёртки
+│       ├── Enums/                   # UI перечисления (StatusMessageType)
+│       └── Events/                  # UI события (NotificationRequestedEventArgs)
 └── tests/
     └── IvkExportTool.Tests/         # Тесты (NUnit)
         ├── Core/                    # Unit-тесты Core слоя
@@ -86,6 +88,7 @@ IvkExportTool/
 - `TableInfo` - информация о таблице (имя, количество строк, размер, тип движка)
 - `ExportOptions` - параметры экспорта (список таблиц, формат, путь)
 - `ExportResult` - результат экспорта (успех, путь к файлу, ошибки)
+- `ExportProgress` - детальная информация о прогрессе экспорта (текущая таблица, строки, процент)
 
 ### Функциональность экспорта
 
@@ -101,13 +104,13 @@ IvkExportTool/
 **Таймер и прогресс экспорта**:
 - Общий таймер показывает время экспорта всех выбранных таблиц
 - Обновление прогресса происходит каждую секунду (по времени, а не по количеству строк)
-- Общий `Stopwatch` передается через всю цепочку методов экспорта в `SqlExportService` (см. `src/IvkExportTool.Infrastructure/Services/SqlExportService.cs:20-60`)
+- Общий `Stopwatch` передается через всю цепочку методов экспорта в `SqlExportService` (см. `src/IvkExportTool.Infrastructure/Services/SqlExportService.cs:22-145`)
 - UI показывает упрощенную строку состояния: детальное сообщение и прошедшее время на одном уровне (без подписи "Время")
 - Убрана информация о текущей таблице и количестве обработанных строк для упрощения интерфейса
 
 ### Dependency Injection
 
-Приложение использует Microsoft.Extensions.DependencyInjection для управления зависимостями. Конфигурация происходит в `App.axaml.cs` (см. `src/IvkExportTool.Desktop/App.axaml.cs:31-45`):
+Приложение использует Microsoft.Extensions.DependencyInjection для управления зависимостями. Конфигурация происходит в `App.axaml.cs` (см. `src/IvkExportTool.Desktop/App.axaml.cs:43-51`):
 
 ```csharp
 // Регистрация сервисов
@@ -176,7 +179,7 @@ StartWindow (выбор способа подключения)
 
 #### Логика переключения окон
 
-Реализована в `App.axaml.cs` (см. `src/IvkExportTool.Desktop/App.axaml.cs:67-272`):
+Реализована в `App.axaml.cs` (см. `src/IvkExportTool.Desktop/App.axaml.cs:72-290`):
 
 **Методы навигации**:
 - `ShowStartWindow()` - показывает стартовое окно выбора способа подключения
@@ -370,289 +373,164 @@ lock (_lock)
 
 **Важно**: Зашифрованный пароль с Windows НЕ совместим с Linux и наоборот.
 
-### Конфигурационные файлы проекта
+### Конфигурационные файлы
 
-- **`Directory.Build.props`** - общие настройки для всех проектов (LangVersion, Nullable, метаданные)
-- **`global.json`** - версия .NET SDK (10.0.0)
-- **`.editorconfig`** - правила форматирования кода (отступы, стиль C#)
-- **`IvkExportTool.sln`** - файл решения со всеми проектами
+| Файл | Назначение |
+|------|------------|
+| `Directory.Build.props` | Общие настройки: LangVersion=latest, Nullable, метаданные |
+| `global.json` | .NET SDK 10.0.0 с rollForward=latestMinor |
+| `.editorconfig` | Форматирование: 4 пробела C#, 2 пробела AXAML |
+| `IvkExportTool.sln` | Файл решения |
 
 ## Команды для разработки
 
-### Базовые команды
+### Основные команды
 
 ```bash
-# Восстановление зависимостей
-dotnet restore
+dotnet build                                    # сборка (Debug)
+dotnet build -c Release                         # сборка (Release)
+dotnet test                                     # все тесты
+dotnet test --filter "Category!=Integration"   # unit-тесты (быстро)
+dotnet test --filter "Category=Integration"    # интеграционные (Docker)
+dotnet format --verify-no-changes              # проверка форматирования
+dotnet format                                  # автоформатирование
 
-# Сборка проекта (Debug)
-dotnet build
-
-# Сборка проекта (Release)
-dotnet build --configuration Release
-
-# Запуск тестов
-dotnet test
-
-# Запуск приложения
+# Запуск
 dotnet run --project src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj
-```
 
-### Разработка с hot reload
-
-```bash
-# Запуск с автоматической перезагрузкой при изменении файлов
+# Hot reload
 dotnet watch run --project src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj
 
-# Запуск в Debug режиме (с Avalonia DevTools)
-dotnet run --project src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj --configuration Debug
-# В Debug режиме доступна отладка через F12 (Avalonia.Diagnostics)
-```
-
-### Форматирование и качество кода
-
-```bash
-# Проверка форматирования (должна проходить перед коммитом)
-dotnet format --verify-no-changes
-
-# Автоматическое форматирование
-dotnet format
-
-# Проверка с анализаторами
-dotnet build --configuration Release /p:RunAnalyzers=true /p:TreatWarningsAsErrors=true
+# Тесты с покрытием
+dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura
 ```
 
 ### Тестирование
 
-```bash
-# Запустить все тесты (unit + integration)
-dotnet test
+**Unit-тесты**: NUnit + FluentAssertions + Moq
 
-# Запустить только unit-тесты (быстро, без Docker)
-dotnet test --filter "Category!=Integration"
+**Интеграционные тесты**: Testcontainers (MySQL 8.0 в Docker)
+- Помечены `[Category("Integration")]`
+- Контейнер создаётся один раз на класс (`[OneTimeSetUp]`)
+- Требуют Docker
 
-# Запустить только интеграционные тесты (требует Docker)
-dotnet test --filter "Category=Integration"
-
-# Запустить тесты с подробным выводом
-dotnet test --verbosity detailed
-
-# Запустить конкретный тест по имени
-dotnet test --filter "FullyQualifiedName~TestName"
-
-# Запустить тесты из конкретного класса
-dotnet test --filter "FullyQualifiedName~IvkExportTool.Tests.Services.MySqlDatabaseServiceTests"
-
-# Запустить тесты с конкретным именем метода
-dotnet test --filter "Name=TestConnectionAsync_ValidCredentials_ReturnsSuccess"
-
-# Тесты с покрытием кода
-dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
-```
-
-#### Интеграционные тесты
-
-Интеграционные тесты используют **Testcontainers** для запуска MySQL в Docker-контейнере:
-
-**Структура**:
-- `Integration/MySqlIntegrationTestBase.cs` - базовый класс с настройкой MySQL контейнера
-- `Integration/MySqlDatabaseServiceIntegrationTests.cs` - тесты для `MySqlDatabaseService`
-- `Integration/SqlExportServiceIntegrationTests.cs` - тесты для `SqlExportService`
-
-**Требования**:
-- Docker Desktop (Windows/macOS) или Docker Engine (Linux)
-- Тесты автоматически определяют Docker endpoint
-
-**Особенности**:
-- Все интеграционные тесты помечены `[Category("Integration")]`
-- Контейнер MySQL 8.0 создаётся один раз на класс тестов (`[OneTimeSetUp]`)
-- Тестовые таблицы создаются/удаляются в каждом тесте
+**Исключения из покрытия**: Views, App, Program, ViewLocator, сгенерированный код
 
 ### Сборка релиза
 
 ```bash
 # Windows x64
 dotnet publish src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj \
-  -c Release \
-  -r win-x64 \
-  --self-contained true \
-  /p:PublishSingleFile=true \
-  /p:IncludeNativeLibrariesForSelfExtract=true \
-  -o ./publish/win-x64
+  -c Release -r win-x64 --self-contained true \
+  /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
 
 # Linux x64
 dotnet publish src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj \
-  -c Release \
-  -r linux-x64 \
-  --self-contained true \
-  /p:PublishSingleFile=true \
-  -o ./publish/linux-x64
-
-# macOS x64
-dotnet publish src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj \
-  -c Release \
-  -r osx-x64 \
-  --self-contained true \
-  /p:PublishSingleFile=true \
-  -o ./publish/osx-x64
+  -c Release -r linux-x64 --self-contained true /p:PublishSingleFile=true
 ```
 
-### Оптимизации размера исполняемого файла
+### Оптимизации размера (Release)
 
-В проекте включены оптимизации для уменьшения размера финальных релизов (см. `src/IvkExportTool.Desktop/IvkExportTool.Desktop.csproj:12-22`):
+Настроены в `IvkExportTool.Desktop.csproj`:
 
-**IL Trimming** - удаляет неиспользуемый код из сборок:
-- `PublishTrimmed=true` - включает trimming
-- `TrimMode=link` - агрессивный режим (удаляет неиспользуемые члены типов)
+| Опция | Эффект |
+|-------|--------|
+| `PublishTrimmed=true` + `TrimMode=link` | IL Trimming (удаление неиспользуемого кода) |
+| `EnableCompressionInSingleFile=true` | Сжатие single-file (-10-20%) |
+| `OptimizationPreference=Size` | Оптимизация по размеру |
 
-**Компрессия Single-File** - сжимает содержимое исполняемого файла:
-- `EnableCompressionInSingleFile=true` - уменьшает размер на 10-20%
-
-**Оптимизация размера**:
-- `OptimizationPreference=Size` - приоритет на минимальный размер кода
-- `/p:StripSymbols=true` - удаляет отладочные символы (добавлено в CI/CD)
-
-Ожидаемый размер релиза: **~40-70 МБ** (вместо ~100 МБ без оптимизаций).
-
-**Важно**: Эти оптимизации применяются только для Release конфигурации и не влияют на Debug сборки.
+**Ожидаемый размер**: ~40-70 МБ (вместо ~100 МБ)
 
 ## Соглашения о коде
 
-### Стиль кода
+### Именование
 
-- Следовать `.editorconfig` для единообразия
 - **PascalCase**: классы, методы, свойства, публичные поля
-- **camelCase**: параметры, локальные переменные, приватные поля
-- **Interfaces**: начинаются с `I` (например, `IDatabaseService`)
-- **Async методы**: всегда заканчиваются на `Async`
+- **camelCase**: параметры, локальные переменные
+- **_camelCase**: приватные поля
+- **I-prefix**: интерфейсы (`IDatabaseService`)
+- **Async-suffix**: асинхронные методы
 
-### Коммиты
+### Коммиты (Conventional Commits)
 
-Использовать [Conventional Commits](https://www.conventionalcommits.org/):
+`feat:` | `fix:` | `docs:` | `style:` | `refactor:` | `test:` | `chore:`
 
-- `feat:` - новая функциональность
-- `fix:` - исправление бага
-- `docs:` - изменения в документации
-- `style:` - форматирование кода
-- `refactor:` - рефакторинг
-- `test:` - тесты
-- `chore:` - обновление зависимостей, CI/CD
+### Avalonia UI
 
-### Avalonia UI специфика
-
-- AXAML файлы используют отступ 2 пробела (определено в `.editorconfig`)
-- ViewModels наследуются от `ObservableObject` (CommunityToolkit.Mvvm) или `ViewModelBase`
-- Используется CommunityToolkit.Mvvm для MVVM паттерна
-- Команды реализуются через `RelayCommand` и `AsyncRelayCommand`
-- Включен `AvaloniaUseCompiledBindingsByDefault` для лучшей производительности (см. `.csproj`)
+- AXAML: отступ 2 пробела
+- ViewModels наследуются от `ViewModelBase` (→ `ObservableObject`)
+- Команды: `[RelayCommand]` и `[AsyncRelayCommand]`
+- `AvaloniaUseCompiledBindingsByDefault=true`
 
 ### Дизайн-система
 
-При создании новых UI элементов обязательно следовать дизайн-системе из `design.md` (Material Design 3, сине-серая палитра с primary `#546e7a`).
+Material Design 3, сине-серая палитра. Primary: `#546e7a`. См. `design.md`.
 
 ## CI/CD
 
-Проект использует GitHub Actions:
+GitHub Actions workflows:
 
-- **build-and-test.yml** - автоматическая сборка и тесты на push/PR
-- **publish.yml** - создание релизов при создании тега версии (Windows x64, Linux x64)
-
-### Pipeline структура
-
-```
-build-and-test.yml:
-  build (ubuntu + windows) → integration-tests (ubuntu, Docker)
-
-publish.yml:
-  test (ubuntu + windows) → integration-tests → publish → create-release
-```
-
-- **build/test**: сборка + unit-тесты (`--filter "Category!=Integration"`)
-- **integration-tests**: тесты с Testcontainers (требует Docker)
-- **publish**: создание self-contained архивов (tar.gz/zip)
-- **create-release**: GitHub Release с артефактами (только для тегов)
+| Workflow | Триггер | Этапы |
+|----------|---------|-------|
+| `build-and-test.yml` | push/PR на main, develop | build (ubuntu + windows) → integration-tests |
+| `publish.yml` | push тега `*.*.*` | test → integration-tests → publish → create-release |
 
 ### Создание релиза
 
 ```bash
 git tag -a v1.0.0 -m "Release version 1.0.0"
 git push origin v1.0.0
-# GitHub Actions автоматически создаст релиз с артефактами для Windows и Linux
+# GitHub Actions автоматически создаст релиз
 ```
 
-### Процесс публикации релиза
+**Артефакты**:
+- `IvkExportTool-{VERSION}-win-x64.zip`
+- `IvkExportTool-{VERSION}-linux-x64.tar.gz`
+- Dev-сборки: версия `0.0.0-dev`
 
-**Извлечение версии** (см. `.github/workflows/publish.yml:86-98`):
-- Версия извлекается из git-тега автоматически: `VERSION="${GITHUB_REF#refs/tags/}"`
-- Если запуск без тега (например, через `workflow_dispatch`), используется версия `0.0.0-dev`
-- Версия передается в процесс сборки через параметры `/p:Version`, `/p:AssemblyVersion`, `/p:FileVersion`
-
-**Структура релизных архивов**:
-- Архивы содержат исполняемый файл **сразу в корне**
-- Нет вложенных директорий типа `runtime/` - пользователь может сразу запустить приложение после распаковки
-- Включены файлы:
-  - `IvkExportTool.exe` (Windows) или `IvkExportTool` (Linux)
-- Настройки приложения хранятся отдельно в `%APPDATA%` (Windows) или `~/.config` (Linux)
-
-**Форматы архивов**:
-- Windows: `.zip` архив (создается через `Compress-Archive`)
-- Linux: `.tar.gz` архив (создается через `tar -czf`)
-
-**Именование артефактов**:
-- Windows: `IvkExportTool-{VERSION}-win-x64.zip` (например, `IvkExportTool-1.0.0-win-x64.zip`)
-- Linux: `IvkExportTool-{VERSION}-linux-x64.tar.gz` (например, `IvkExportTool-1.0.0-linux-x64.tar.gz`)
-- Dev-сборки: `IvkExportTool-0.0.0-dev-{runtime}.{ext}`
+**Версионирование**: извлекается из git-тега, передаётся через `/p:Version`, `/p:AssemblyVersion`, `/p:FileVersion`
 
 ## Важные замечания
 
 ### Безопасность
 
-#### Шифрование учётных данных для автоподключения
+**Шифрование credentials для автоподключения** (`Core/Security/CredentialProtector.cs`, `Core/Constants/DefaultCredentials.cs`):
+- AES-256 CBC + PKCS7
+- Ключ собирается из 8 частей, хешируется SHA256
+- Lazy-загрузка при первом обращении
 
-Учётные данные для автоподключения хранятся в зашифрованном виде (см. `src/IvkExportTool.Core/Constants/DefaultCredentials.cs`):
+**Защищает от**: `strings`, `grep`, hex-редакторы, ILSpy
+**Не защищает от**: отладчик с breakpoint, дамп памяти
 
-**Архитектура защиты**:
-- **Алгоритм**: AES-256 в режиме CBC с PKCS7 padding
-- **Хранение**: credentials хранятся как `byte[][]` (IV + ciphertext для каждой пары)
-- **Ключ**: собирается из 8 частей, разбросанных по коду, затем хешируется SHA256
-- **Расшифровка**: lazy-загрузка при первом обращении к `DefaultCredentials.List`
+**Общие правила**:
+- Настройки хранятся в `%APPDATA%` (Windows) / `~/.config` (Linux)
+- Не коммитить строки подключения
 
-**Файлы**:
-- `Core/Security/CredentialProtector.cs` - класс шифрования/расшифровки
-- `Core/Constants/DefaultCredentials.cs` - зашифрованные credentials
-- `Core/Models/Credential.cs` - модель учётных данных
+### Ограничения
 
-**Уровень защиты**:
-- ✅ Защищает от: `strings`, `grep`, hex-редакторов, случайного просмотра
-- ✅ Усложняет: статический анализ в ILSpy/dnSpy
-- ⚠️ Не защищает от: отладчика с breakpoint на `Unprotect()`, дампа памяти
-
-**Добавление новых credentials**:
-1. Запустить утилиту `tools/EncryptHelper` (создать временно)
-2. Добавить новую пару в массив credentials
-3. Скопировать сгенерированный `byte[]` в `DefaultCredentials.EncryptedCredentials`
-
-#### Общие правила
-- Строки подключения к базам данных не должны коммититься в репозиторий
-- Настройки хранятся в `%APPDATA%` (Windows) или `~/.config` (Linux), а не в папке приложения
-- Не хранить пароли и ключи в коде в открытом виде
-
-### Тестирование
-
-Не пытайся запустить проект для проверки визуальной части. Проект сделан на технологии Avalonia и ты не сможешь получить доступ к фронт-части.
+**Avalonia UI**: Нет возможности проверить визуальную часть — приложение требует GUI среду.
 
 ## Технический долг
 
-Перед внесением изменений ознакомься с документами в папке `tech_debt/`:
+Перед внесением изменений ознакомься с документами технического долга:
 
-- **`tech_debt/CODE_REVIEW.md`** - детальный обзор кода с приоритизированным списком проблем (P0-P3)
-- **`tech-debt/large-table-export-optimization.md`** - план оптимизации экспорта больших таблиц
+| Документ | Описание |
+|----------|----------|
+| `tech_debt/CODE_REVIEW.md` | Детальный обзор кода с приоритизированным списком проблем (P0-P3) |
+| `tech-debt/large-table-export-optimization.md` | План оптимизации экспорта больших таблиц (частично выполнен) |
 
 ### Известные критические проблемы (P0)
 
-1. **SQL-инъекция** в `SqlExportService.cs` - имена таблиц подставляются без валидации
-2. **Утечка памяти** - подписки на события не отписываются при смене фильтра таблиц
-3. **Race condition** в `SettingsStore.cs` - `Load()` без блокировки
-4. **Недостающие AXAML ресурсы** - `SurfaceContainerHighBrush`, `OnSurfaceVariantBrush`
+1. **SQL-инъекция** в `SqlExportService.cs` — имена таблиц подставляются без валидации
+2. **Утечка памяти** — подписки на события не отписываются при смене фильтра таблиц
+3. **Race condition** в `SettingsStore.cs` — `Load()` без блокировки
+4. **Недостающие AXAML ресурсы** — `SurfaceContainerHighBrush`, `OnSurfaceVariantBrush`
 
-Подробности и план исправления см. в `tech_debt/CODE_REVIEW.md`.
+### Выполненные оптимизации экспорта (2025-11-10)
+
+- ✅ Потоковая запись без накопления `List<string>` в памяти
+- ✅ `StringBuilder` для экранирования строк
+- ✅ Увеличен буфер `StreamWriter` до 64KB
+- ✅ Детальный прогресс экспорта (`ExportProgress`)
+
+Подробности см. в `tech_debt/CODE_REVIEW.md`. Номера строк могут быть неактуальны — используй поиск по ключевым словам.

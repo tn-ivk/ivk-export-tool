@@ -196,43 +196,80 @@ if (result.Success)
 ```csharp
 public interface IAppSettingsService
 {
-    void SaveSettings(AppSettings settings);
-    AppSettings LoadSettings();
+    Task<ConnectionConfig> LoadConnectionAsync();
+    Task SaveConnectionAsync(ConnectionConfig config);
+    Task SaveHostAndPortAsync(string host, int port);
+    Task<string?> LoadLastExportDirectoryAsync();
+    Task SaveLastExportDirectoryAsync(string directory);
 }
 ```
 
 ##### Methods
 
-**SaveSettings**
+**LoadConnectionAsync**
 
-Сохраняет настройки приложения в файл.
+Загружает настройки подключения из хранилища.
 
 ```csharp
-void SaveSettings(AppSettings settings)
+Task<ConnectionConfig> LoadConnectionAsync()
+```
+
+**Returns**: `Task<ConnectionConfig>` — конфигурация подключения (или настройки по умолчанию при ошибке)
+
+---
+
+**SaveConnectionAsync**
+
+Сохраняет настройки подключения в хранилище.
+
+```csharp
+Task SaveConnectionAsync(ConnectionConfig config)
 ```
 
 | Параметр | Тип | Описание |
 |----------|-----|----------|
-| `settings` | `AppSettings` | Объект с настройками |
-
-**Exceptions**:
-- `ArgumentNullException` — если `settings` равен `null`
-- `IOException` — ошибка при записи файла
+| `config` | `ConnectionConfig` | Конфигурация подключения |
 
 ---
 
-**LoadSettings**
+**SaveHostAndPortAsync**
 
-Загружает настройки приложения из файла.
+Сохраняет только хост и порт подключения (без учётных данных). Используется при автоподключении.
 
 ```csharp
-AppSettings LoadSettings()
+Task SaveHostAndPortAsync(string host, int port)
 ```
 
-**Returns**: `AppSettings` — объект с настройками (или настройки по умолчанию)
+| Параметр | Тип | Описание |
+|----------|-----|----------|
+| `host` | `string` | IP-адрес или имя хоста |
+| `port` | `int` | Порт MySQL сервера |
 
-**Exceptions**:
-- `IOException` — ошибка при чтении файла
+---
+
+**LoadLastExportDirectoryAsync**
+
+Загружает путь к последней папке экспорта.
+
+```csharp
+Task<string?> LoadLastExportDirectoryAsync()
+```
+
+**Returns**: `Task<string?>` — путь к папке или `null` если не сохранён
+
+---
+
+**SaveLastExportDirectoryAsync**
+
+Сохраняет путь к последней папке экспорта.
+
+```csharp
+Task SaveLastExportDirectoryAsync(string directory)
+```
+
+| Параметр | Тип | Описание |
+|----------|-----|----------|
+| `directory` | `string` | Путь к папке экспорта |
 
 ---
 
@@ -247,7 +284,7 @@ AppSettings LoadSettings()
 ```csharp
 public class ConnectionConfig
 {
-    public string Host { get; set; } = "localhost";
+    public string Host { get; set; } = "192.168.233.101";
     public int Port { get; set; } = 3306;
     public string Username { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
@@ -259,7 +296,7 @@ public class ConnectionConfig
 
 | Свойство | Тип | Описание | По умолчанию |
 |----------|-----|----------|--------------|
-| `Host` | `string` | IP-адрес или имя хоста MySQL сервера | `"localhost"` |
+| `Host` | `string` | IP-адрес или имя хоста MySQL сервера | `"192.168.233.101"` |
 | `Port` | `int` | Порт MySQL сервера | `3306` |
 | `Username` | `string` | Имя пользователя | `string.Empty` |
 | `Password` | `string` | Пароль пользователя | `string.Empty` |
@@ -689,8 +726,11 @@ SET FOREIGN_KEY_CHECKS = 1;
 ```csharp
 public class AppSettingsService : IAppSettingsService
 {
-    public void SaveSettings(AppSettings settings);
-    public AppSettings LoadSettings();
+    public Task<ConnectionConfig> LoadConnectionAsync();
+    public Task SaveConnectionAsync(ConnectionConfig config);
+    public Task SaveHostAndPortAsync(string host, int port);
+    public Task<string?> LoadLastExportDirectoryAsync();
+    public Task SaveLastExportDirectoryAsync(string directory);
 }
 ```
 

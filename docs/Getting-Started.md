@@ -21,8 +21,8 @@
    - **macOS**: `IvkExportTool-osx-x64.tar.gz`
 3. Распакуйте архив в удобную папку
 4. Запустите исполняемый файл:
-   - **Windows**: `IvkExportTool.Desktop.exe`
-   - **Linux/macOS**: `./IvkExportTool.Desktop`
+   - **Windows**: `IvkExportTool.exe`
+   - **Linux/macOS**: `./IvkExportTool`
 
 ### Вариант B: Сборка из исходников
 
@@ -151,8 +151,8 @@ FLUSH PRIVILEGES;
 **Решение**: Добавьте права на выполнение:
 
 ```bash
-chmod +x IvkExportTool.Desktop
-./IvkExportTool.Desktop
+chmod +x IvkExportTool
+./IvkExportTool
 ```
 
 ### Ошибка "Unable to load shared library 'libdl'"
